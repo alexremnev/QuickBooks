@@ -11,8 +11,8 @@ namespace QuickBooks.Controllers
 {
     public class CreditMemoController : Controller
     {
-        // GET: CreditMemo
-        public ActionResult Index()
+       // GET: CreditMemo
+        public ActionResult Pull()
         {
             var consumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
             var consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
