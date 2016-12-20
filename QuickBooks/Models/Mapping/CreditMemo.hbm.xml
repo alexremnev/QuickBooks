@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" namespace="QuickBooks.Models.DAL" assembly="QuickBooks">
+  <class name="CreditMemo" table ="CreditMemo">
+    <id name="Id">
+      <generator class="identity"/>
+    </id>
+    <property name="DocNumber" column="DocNumber" />
+    <property name="TxnDate" column="TxnDate" />
+    <property name="NameAndId" column="NameAndId"/>
+    <property name="ShipAddr" column="ShipAddr" />
+    <bag name ="LineItems" cascade = "all" lazy="false">
+      <key column ="CreditMemoId"/>
+      <one-to-many class ="LineItem"/>
+    </bag>
+  </class>
+</hibernate-mapping>

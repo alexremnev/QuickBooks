@@ -6,11 +6,17 @@ using Intuit.Ipp.Core;
 using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
 using Intuit.Ipp.Security;
+using QuickBooks.Models.Services;
 
 namespace QuickBooks.Controllers
 {
     public class CreditMemoController : Controller
     {
+        private readonly ICreditMemoService _service;
+        public CreditMemoController(ICreditMemoService service)
+        {
+            _service = service;
+        }
        // GET: CreditMemo
         public ActionResult Pull()
         {
@@ -23,8 +29,9 @@ namespace QuickBooks.Controllers
             OAuthRequestValidator oauthValidator = new OAuthRequestValidator(System.Web.HttpContext.Current.Session["accessToken"].ToString(), System.Web.HttpContext.Current.Session["accessTokenSecret"].ToString(), consumerKey, consumerSecret);
             ServiceContext context = new ServiceContext(appToken, realmId, intuitServicesType, oauthValidator);
             DataService dataService = new DataService(context);
-            List<Customer> customers = dataService.FindAll(new Customer(), 1, 100).ToList();
-            return Json(customers, JsonRequestBehavior.AllowGet);
+            IList<CreditMemo> creditMemos = dataService.FindAll(new CreditMemo()).ToList();
+            _service.Save(creditMemos);
+            return Json(creditMemos, JsonRequestBehavior.AllowGet);
         }
     }
 }
