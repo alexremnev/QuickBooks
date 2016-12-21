@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Web.Mvc;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
+using Intuit.Ipp.Data;
 
 namespace QuickBooks.Controllers
 {
@@ -35,6 +36,7 @@ namespace QuickBooks.Controllers
                 if (queryKeys.Contains("oauth_token"))
                 {
                     ReadToken();
+                    return View("Close");
                 }
             }
             return RedirectToAction("Index");
@@ -89,10 +91,10 @@ namespace QuickBooks.Controllers
             IToken requestToken = session.GetRequestToken();
             System.Web.HttpContext.Current.Session["requestToken"] = requestToken;
             _requesToken = requestToken;
-            //            TokenSecret = requestToken.TokenSecret;
             var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(OauthCallbackUrl)}";
             System.Web.HttpContext.Current.Session["oauthLink"] = authUrl;
             Response.Redirect(authUrl);
+           
         }
     }
 }

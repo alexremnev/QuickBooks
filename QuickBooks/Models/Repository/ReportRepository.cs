@@ -1,18 +1,21 @@
 ﻿using System;
+using Common.Logging;
 using NHibernate;
 using QuickBooks.Models.DAL;
 using Spring.Data.NHibernate;
 using Spring.Transaction.Interceptor;
 
-
-namespace QuickBooks.Models.Repositories
+namespace QuickBooks.Models.Repository
 {
-    public class BaseRepository<T> : IRepository<T> where T : BaseEntity
+    public class ReportRepository : IReportRepository
     {
-        public ISessionFactory Sessionfactory { get; set; }
+        private readonly ILog _log = LogManager.GetLogger<ReportRepository>();
+        private readonly string _entityName = "report";
+
+       public ISessionFactory Sessionfactory { get; set; }
 
         [Transaction]
-        public void Create(T entity)
+        public void Create(Report entity)
         {
             try
             {
@@ -22,7 +25,7 @@ namespace QuickBooks.Models.Repositories
             }
             catch (Exception e)
             {
-                //  _log.Error($"Exception occured when system tried to create an {_entityName}", e);
+                _log.Error($"Exception occured when system tried to create an {_entityName}", e);
                 throw;
             }
         }

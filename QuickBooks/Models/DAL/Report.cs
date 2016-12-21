@@ -1,7 +1,6 @@
 ﻿namespace QuickBooks.Models.DAL
 {
-    public class Invoice : BaseEntity
+    public class Report : BaseEntity
     {
-        
     }
 }

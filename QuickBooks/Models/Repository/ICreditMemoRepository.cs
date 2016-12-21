@@ -1,6 +1,6 @@
 ﻿using QuickBooks.Models.DAL;
 
-namespace QuickBooks.Models.Repositories
+namespace QuickBooks.Models.Repository
 {
     public interface ICreditMemoRepository : IRepository<CreditMemo>
     {

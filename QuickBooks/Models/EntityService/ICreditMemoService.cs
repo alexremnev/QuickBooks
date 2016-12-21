@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace QuickBooks.Models.Services
+namespace QuickBooks.Models.EntityService
 {
    public interface ICreditMemoService
    {

@@ -243,6 +243,7 @@
     <Content Include="Content\bootstrap.css.map" />
     <Content Include="Content\bootstrap-theme.min.css.map" />
     <Content Include="Content\bootstrap-theme.css.map" />
+    <EmbeddedResource Include="Models\Mapping\Report.hbm.xml" />
     <Content Include="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -268,7 +269,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\RouteConfig.cs" />
-    <Compile Include="Controllers\CreditMemoController.cs" />
+    <Compile Include="Controllers\ReportController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -278,13 +279,22 @@
     <Compile Include="Models\DAL\Estimate.cs" />
     <Compile Include="Models\DAL\Invoice.cs" />
     <Compile Include="Models\DAL\LineItem.cs" />
+    <Compile Include="Models\DAL\Report.cs" />
     <Compile Include="Models\DAL\SaleReceipt.cs" />
-    <Compile Include="Models\Repositories\BaseRepository.cs" />
-    <Compile Include="Models\Repositories\CreditMemoRepository.cs" />
-    <Compile Include="Models\Repositories\ICreditMemoRepository.cs" />
-    <Compile Include="Models\Repositories\IRepository.cs" />
-    <Compile Include="Models\Services\CreditMemoService.cs" />
-    <Compile Include="Models\Services\ICreditMemoService.cs" />
+    <Compile Include="Models\ReportService\IReportService.cs" />
+    <Compile Include="Models\ReportService\ReportService.cs" />
+    <Compile Include="Models\Repository\IReportRepository.cs" />
+    <Compile Include="Models\Repository\ReportRepository.cs" />
+    <Compile Include="Models\Repository\BaseRepository.cs" />
+    <Compile Include="Models\Repository\CreditMemoRepository.cs" />
+    <Compile Include="Models\Repository\InvoiceRepository.cs" />
+    <Compile Include="Models\Repository\ICreditMemoRepository.cs" />
+    <Compile Include="Models\Repository\IInvoiceRepository.cs" />
+    <Compile Include="Models\Repository\IRepository.cs" />
+    <Compile Include="Models\EntityService\CreditMemoService.cs" />
+    <Compile Include="Models\EntityService\InvoiceService.cs" />
+    <Compile Include="Models\EntityService\ICreditMemoService.cs" />
+    <Compile Include="Models\EntityService\IInvoiceService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -295,6 +305,7 @@
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Scripts\jquery-3.1.1.slim.min.map" />
     <Content Include="Scripts\jquery-3.1.1.min.map" />
+    <Content Include="Views\Home\Close.cshtml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
