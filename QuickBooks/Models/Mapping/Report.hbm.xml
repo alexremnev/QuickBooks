@@ -9,7 +9,7 @@
     <property name="NameAndId" column="NameAndId"/>
     <property name="ShipAddr" column="ShipAddr" />
     <bag name ="LineItems" cascade = "all" lazy="false">
-      <key column ="CreditMemoId"/>
+      <key column ="ReportId"/>
       <one-to-many class ="LineItem"/>
     </bag>
   </class>

@@ -21,7 +21,7 @@
 </script>
 
 <div id="connect-to-qbo-div">
-    @if (HttpContext.Current.Session["accessToken"] != null)
+ @if (ViewBag.Access == true)
     {
         <p>My app is connected to QuickBooks Online.</p>
     }
@@ -33,9 +33,12 @@
     <ipp:connecttointuit></ipp:connecttointuit>
 </div>
 <div>
+    @using (@Html.BeginForm("Recalculate", "Report"))
+    {
+        <button style="padding: 10px">Recalculate sales tax </button>
+    }
     @using (@Html.BeginForm("Create", "Report"))
     {
-        <button>Create Report</button>
+        <button style="padding: 10px">Create Report</button>
     }
-
 </div>

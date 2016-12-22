@@ -2,8 +2,8 @@
 
 namespace QuickBooks.Models.Repository
 {
-    public interface IRepository<T> where T : class
+    public interface IOAuthRepository : IRepository<OAuth>
     {
-        void Create(T entity);
+        OAuth Get();
     }
 }

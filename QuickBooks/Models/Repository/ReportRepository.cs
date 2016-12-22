@@ -10,9 +10,7 @@ namespace QuickBooks.Models.Repository
     public class ReportRepository : IReportRepository
     {
         private readonly ILog _log = LogManager.GetLogger<ReportRepository>();
-        private readonly string _entityName = "report";
-
-       public ISessionFactory Sessionfactory { get; set; }
+        public ISessionFactory Sessionfactory { get; set; }
 
         [Transaction]
         public void Create(Report entity)
@@ -25,7 +23,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when system tried to create an {_entityName}", e);
+                _log.Error($"Exception occured when system tried to create an report", e);
                 throw;
             }
         }

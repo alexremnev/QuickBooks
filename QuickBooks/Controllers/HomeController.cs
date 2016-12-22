@@ -1,14 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Web.Mvc;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
-using Intuit.Ipp.Data;
+using QuickBooks.Models.DAL;
+using QuickBooks.Models.EntityService;
 
 namespace QuickBooks.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly IOAuthService _oauthService;
+        public HomeController(IOAuthService oAuthService)
+        {
+            _oauthService = oAuthService;
+        }
         private static readonly string RequestTokenUrl = ConfigurationManager.AppSettings["GET_REQUEST_TOKEN"];
         private static readonly string AccessTokenUrl = ConfigurationManager.AppSettings["GET_ACCESS_TOKEN"];
         private static readonly string AuthorizeUrl = ConfigurationManager.AppSettings["AuthorizeUrl"];
@@ -21,6 +28,8 @@ namespace QuickBooks.Controllers
 
         public ActionResult Index()
         {
+            var permission = _oauthService.Get();
+            if (permission.AccessToken != null) ViewBag.Access = true;
             return View();
         }
 
@@ -36,6 +45,14 @@ namespace QuickBooks.Controllers
                 if (queryKeys.Contains("oauth_token"))
                 {
                     ReadToken();
+                    var oAuth = new OAuth()
+                    {
+                        AccessToken = System.Web.HttpContext.Current.Session["accessToken"].ToString(),
+                        AccessTokenSecret = System.Web.HttpContext.Current.Session["accessTokenSecret"].ToString(),
+                        RealmId = Convert.ToInt64(System.Web.HttpContext.Current.Session["realm"]).ToString()
+                    };
+                    _oauthService.Save(oAuth);
+                    ViewBag.Access = true;
                     return View("Close");
                 }
             }
@@ -94,7 +111,7 @@ namespace QuickBooks.Controllers
             var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(OauthCallbackUrl)}";
             System.Web.HttpContext.Current.Session["oauthLink"] = authUrl;
             Response.Redirect(authUrl);
-           
+
         }
     }
 }

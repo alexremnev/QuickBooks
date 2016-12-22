@@ -1,6 +1,6 @@
 ﻿namespace QuickBooks.Models.DAL
 {
-    public class SaleReceipt : BaseEntity
+    public class SalesReceipt : BaseEntity
     {
     }
 }

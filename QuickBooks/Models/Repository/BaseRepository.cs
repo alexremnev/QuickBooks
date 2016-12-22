@@ -1,13 +1,12 @@
 ﻿using System;
 using Common.Logging;
 using NHibernate;
-using QuickBooks.Models.DAL;
 using Spring.Data.NHibernate;
 using Spring.Transaction.Interceptor;
 
 namespace QuickBooks.Models.Repository
 {
-    public class BaseRepository<T> : IRepository<T> where T : BaseEntity
+    public class BaseRepository<T> : IRepository<T> where T : class
     {
         private readonly ILog _log;
         private readonly string _entityName;
