@@ -2,8 +2,12 @@
 
 namespace QuickBooks.Models.Repository
 {
-    public interface IOAuthRepository : IRepository<OAuth>
+    public interface IOAuthRepository : IBaseRepository<OAuth>
     {
+        /// <summary>
+        /// Return the entity of Aouth.
+        /// </summary>
+        /// <returns>returns the entity of OAuth</returns>
         OAuth Get();
     }
 }

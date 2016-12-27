@@ -6,18 +6,17 @@ using Spring.Transaction.Interceptor;
 
 namespace QuickBooks.Models.Repository
 {
-    public class BaseRepository<T> : IRepository<T> where T : class
+    public class BaseRepository<T> : IBaseRepository<T> where T : class
     {
         private readonly ILog _log;
         private readonly string _entityName;
+        public ISessionFactory Sessionfactory { get; set; }
 
-        protected BaseRepository(ILog log, string entityName)
+        protected BaseRepository(string entityName)
         {
-            _log = log;
+            _log = LogManager.GetLogger(GetType());
             _entityName = entityName;
         }
-
-        public ISessionFactory Sessionfactory { get; set; }
 
         [Transaction]
         public void Create(T entity)

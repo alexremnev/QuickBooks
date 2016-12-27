@@ -16,3 +16,46 @@ textarea {
     max-width: 280px;
 }
 
+#RecalculateBtn {
+    padding: 10px;
+    width: 180px;
+}
+
+#ReportBtn {
+    padding: 10px;
+    width: 180px;
+}
+
+#RecalculateSuccess {
+    visibility: hidden;
+    width: 50px;
+    height: 50px;
+}
+
+#CreateSuccess {
+    visibility: hidden;
+    width: 50px;
+    height: 50px;
+
+}
+
+.navbar-header {
+    color: green;
+    font-size: 28px;
+    text-align: center;
+}
+
+.container {
+    
+    font-family: sans-serif;
+    }
+
+.navbar {
+    text-align: center;
+    font-family: sans-serif;
+}
+
+.navbar-collapse, .collapse {
+    text-align: center;
+    
+}

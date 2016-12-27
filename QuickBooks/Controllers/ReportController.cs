@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Web.Mvc;
 using Common.Logging;
 using Intuit.Ipp.Core;
-using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
-using Intuit.Ipp.LinqExtender;
-using Intuit.Ipp.QueryFilter;
 using Intuit.Ipp.Security;
 using QuickBooks.Models.EntityService;
+using CreditMemo = Intuit.Ipp.Data.CreditMemo;
+using Invoice = Intuit.Ipp.Data.Invoice;
+using SalesReceipt = Intuit.Ipp.Data.SalesReceipt;
 
 namespace QuickBooks.Controllers
 {
@@ -22,33 +21,40 @@ namespace QuickBooks.Controllers
         private readonly IInvoiceService _invoiceService;
         private readonly ISalesReceiptService _salesReceiptService;
         private readonly IOAuthService _oauthService;
-        public ReportController(ICreditMemoService creditMemoService, IInvoiceService invoiceService, ISalesReceiptService salesReceiptService, IOAuthService oauthService)
+        private readonly IEstimateService _estimateSrService;
+        private readonly string _appToken = ConfigurationManager.AppSettings["appToken"];
+        private readonly string _consumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
+        private readonly string _consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
+        private const IntuitServicesType IntuitServicesType = Intuit.Ipp.Core.IntuitServicesType.QBO;
+
+        public ReportController(ICreditMemoService creditMemoService, IInvoiceService invoiceService,
+            ISalesReceiptService salesReceiptService, IOAuthService oauthService, IEstimateService estimateService)
         {
             _creditMemoService = creditMemoService;
             _invoiceService = invoiceService;
             _salesReceiptService = salesReceiptService;
             _oauthService = oauthService;
+            _estimateSrService = estimateService;
         }
 
         public ActionResult Create()
         {
             try
             {
-                var consumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
-                var consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
-                var appToken = @"926acffab65abb4251b9d29b3d7daf2f4bf5";
-                var intuitServicesType = IntuitServicesType.QBO;
                 var permission = _oauthService.Get();
-                OAuthRequestValidator oauthValidator = new OAuthRequestValidator(permission.AccessToken, permission.AccessTokenSecret, consumerKey, consumerSecret);
-                ServiceContext context = new ServiceContext(appToken, permission.RealmId, intuitServicesType, oauthValidator);
-                DataService dataService = new DataService(context);
-                IList<CreditMemo> creditMemos = dataService.FindAll(new CreditMemo()).ToList();
-                _creditMemoService.Save(creditMemos);
-                IList<Invoice> invoices = dataService.FindAll(new Invoice()).ToList();
-                _invoiceService.Save(invoices);
-                IList<SalesReceipt> sales = dataService.FindAll(new SalesReceipt()).ToList();
-                _salesReceiptService.Save(sales);
-                return Json(invoices, JsonRequestBehavior.AllowGet);
+                var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
+                    permission.AccessTokenSecret, _consumerKey, _consumerSecret);
+                var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
+                    oauthValidator);
+                var dataService = new DataService(context);
+                var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
+                //  _creditMemoService.Save(creditMemos);
+                var invoices = dataService.FindAll(new Invoice()).ToList();
+                //  _invoiceService.Save(invoices);
+                var sales = dataService.FindAll(new SalesReceipt()).ToList();
+                // _salesReceiptService.Save(sales);
+                return RedirectToAction("Index", "Home");
+
             }
             catch (Exception e)
             {
@@ -61,72 +67,21 @@ namespace QuickBooks.Controllers
         {
             try
             {
-                var consumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
-                var consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
-                var appToken = @"926acffab65abb4251b9d29b3d7daf2f4bf5";
-                var intuitServicesType = IntuitServicesType.QBO;
                 var permission = _oauthService.Get();
-                OAuthRequestValidator oauthValidator = new OAuthRequestValidator(permission.AccessToken, permission.AccessTokenSecret, consumerKey, consumerSecret);
-                ServiceContext context = new ServiceContext(appToken, permission.RealmId, intuitServicesType, oauthValidator);
-                context.IppConfiguration.Message.Request.SerializationFormat = Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-                context.IppConfiguration.Message.Response.SerializationFormat = Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-                DataService dataService = new DataService(context);
+                var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
+                    permission.AccessTokenSecret, _consumerKey, _consumerSecret);
+                var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
+                    oauthValidator);
+                context.IppConfiguration.Message.Request.SerializationFormat =
+                    Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+                context.IppConfiguration.Message.Response.SerializationFormat =
+                    Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+                var dataService = new DataService(context);
 
-                var queryService = new QueryService<Estimate>(context);
-                // var d = new decimal(362.07);
-                var d = new decimal(70);
-
-
-                var estimates = queryService.Where(e => e.TotalAmt == d).ToList();
-
-                foreach (var estimate in estimates)
-                {
-                    TxnTaxDetail detail = new TxnTaxDetail();
-                    detail.TxnTaxCodeRef = new ReferenceType()
-                    {
-                        name = "CA",
-                        Value = 5.ToString()
-                    };
-                    detail.TaxLine[0] = new Line()
-                    {
-                        DetailTypeSpecified = true,
-                        Amount = new decimal(14),
-                        AmountSpecified = true,
-
-                    };
-                    detail.TotalTax = new decimal(14);
-                    estimate.TxnTaxDetail = detail;
-                    
-
-                    //estimate.DocNumber = 1111.ToString();
-                    dataService.Update(estimate);
-                }
-
-                //var queryService = new QueryService<Estimate>(context);
-                //var estimates = queryService.Where(e => e.TotalAmt > 1000).ToList();
-
-                //                var estimates = queryService.Where(e => e.ShipAddr.CountrySubDivisionCode == "CA").ToList();
-                //
-                //                foreach (var estimate in estimates)
-                //                {
-                //                    estimate.
-                //                    if (estimate.ShipAddr.CountrySubDivisionCode == "CA")
-                //                    {
-                //                        if (estimate.TxnTaxDetail != null)
-                //                        {
-                //                            var detail = estimate.TxnTaxDetail.TaxLine[0].AnyIntuitObject;
-                //                            if ((detail != null) && (detail is Intuit.Ipp.Data.TxnTaxDetail))
-                //                            {
-                //                                ((TxnTaxDetail)detail).TotalTax = 10;
-                //                                dataService.Update(estimate);
-                //                            }
-                //                        }
-                //                    }
-                //
-                //
-                //                }
-
-
+                _invoiceService.Recalculate(context, dataService);
+                //                _creditMemoService.Recalculate(context, dataService);
+                //                _salesReceiptService.Recalculate(context, dataService);
+                //                _estimateSrService.Recalculate(context, dataService);
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception e)

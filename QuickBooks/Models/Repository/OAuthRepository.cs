@@ -7,11 +7,11 @@ namespace QuickBooks.Models.Repository
 {
     public class OAuthRepository : BaseRepository<OAuth>, IOAuthRepository
     {
-        private static readonly ILog Log = LogManager.GetLogger<OAuthRepository>();
         private const string NameEntity = "OAuth";
         private const int Id = 1;
+        private ILog _log = LogManager.GetLogger<OAuthRepository>();
 
-        public OAuthRepository() : base(Log, NameEntity)
+        public OAuthRepository() : base(NameEntity)
         {
         }
 
@@ -24,7 +24,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                Log.Error($"Exception occured when system tried to get access token and access token secret from database", e);
+                _log.Error($"Exception occured when system tried to get access token and access token secret from database", e);
                 throw;
             }
 

@@ -228,6 +228,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="fonts\Галочка-зеленая.jpg" />
     <Content Include="Content\bootstrap-theme.css" />
     <Content Include="Content\bootstrap-theme.min.css" />
     <Content Include="Content\bootstrap.css" />
@@ -274,6 +275,7 @@
     </Compile>
     <Compile Include="Models\DAL\BaseEntity.cs" />
     <Compile Include="Models\DAL\CreditMemo.cs" />
+    <Compile Include="Models\DAL\EncryptedString.cs" />
     <Compile Include="Models\DAL\Estimate.cs" />
     <Compile Include="Models\DAL\Invoice.cs" />
     <Compile Include="Models\DAL\LineItem.cs" />
@@ -281,6 +283,12 @@
     <Compile Include="Models\DAL\Report.cs" />
     <Compile Include="Models\DAL\SalesReceipt.cs" />
     <Compile Include="Models\DAL\TaxRate.cs" />
+    <Compile Include="Models\EntityService\BaseService.cs" />
+    <Compile Include="Models\EntityService\CryptoEngine.cs" />
+    <Compile Include="Models\EntityService\EstimateService.cs" />
+    <Compile Include="Models\EntityService\IBaseService.cs" />
+    <Compile Include="Models\EntityService\ICryptoEngine.cs" />
+    <Compile Include="Models\EntityService\IEstimateService.cs" />
     <Compile Include="Models\EntityService\IOAuthService.cs" />
     <Compile Include="Models\EntityService\ISalesReceiptService.cs" />
     <Compile Include="Models\EntityService\OAuthService.cs" />
@@ -292,11 +300,7 @@
     <Compile Include="Models\Repository\OAuthRepository.cs" />
     <Compile Include="Models\Repository\ReportRepository.cs" />
     <Compile Include="Models\Repository\BaseRepository.cs" />
-    <Compile Include="Models\Repository\CreditMemoRepository.cs" />
-    <Compile Include="Models\Repository\InvoiceRepository.cs" />
-    <Compile Include="Models\Repository\ICreditMemoRepository.cs" />
-    <Compile Include="Models\Repository\IInvoiceRepository.cs" />
-    <Compile Include="Models\Repository\IRepository.cs" />
+    <Compile Include="Models\Repository\IBaseRepository.cs" />
     <Compile Include="Models\EntityService\CreditMemoService.cs" />
     <Compile Include="Models\EntityService\InvoiceService.cs" />
     <Compile Include="Models\EntityService\ICreditMemoService.cs" />

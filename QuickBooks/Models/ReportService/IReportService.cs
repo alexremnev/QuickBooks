@@ -4,6 +4,10 @@ namespace QuickBooks.Models.ReportService
 {
    public interface IReportService
    {
-       void Save(BaseEntity entities);
+        /// <summary>
+        /// Save the list of entity in database.
+        /// </summary>
+        /// <param name="entities">the list of entities.</param>
+        void Save(BaseEntity entities);
    }
 }

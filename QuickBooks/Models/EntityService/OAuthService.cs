@@ -5,19 +5,19 @@ namespace QuickBooks.Models.EntityService
 {
     public class OAuthService : IOAuthService
     {
-        private readonly IOAuthRepository _repository;
-        public OAuthService(IOAuthRepository repository)
+        private readonly IOAuthRepository _baseRepository;
+        public OAuthService(IOAuthRepository baseRepository)
         {
-            _repository = repository;
+            _baseRepository = baseRepository;
         }
         public void Save(OAuth entity)
         {
-            _repository.Create(entity);
+            _baseRepository.Create(entity);
         }
 
         public OAuth Get()
         {
-            return _repository.Get();
+            return _baseRepository.Get();
         }
     }
 }

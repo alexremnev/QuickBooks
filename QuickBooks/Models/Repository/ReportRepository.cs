@@ -1,31 +1,14 @@
-﻿using System;
-using Common.Logging;
-using NHibernate;
-using QuickBooks.Models.DAL;
-using Spring.Data.NHibernate;
-using Spring.Transaction.Interceptor;
+﻿using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Models.Repository
 {
-    public class ReportRepository : IReportRepository
+    public class ReportRepository :BaseRepository<Report>, IReportRepository
     {
-        private readonly ILog _log = LogManager.GetLogger<ReportRepository>();
-        public ISessionFactory Sessionfactory { get; set; }
+        private const string NameEntity = "Report";
 
-        [Transaction]
-        public void Create(Report entity)
+        public ReportRepository() : base(NameEntity)
         {
-            try
-            {
-                if (entity == null) throw new ArgumentNullException(nameof(entity));
-                var ht = new HibernateTemplate(Sessionfactory);
-                ht.Save(entity);
-            }
-            catch (Exception e)
-            {
-                _log.Error($"Exception occured when system tried to create an report", e);
-                throw;
-            }
         }
+       
     }
 }
