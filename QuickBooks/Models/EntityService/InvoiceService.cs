@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Intuit.Ipp.Data;
 using QuickBooks.Models.ReportService;
 using Invoice = QuickBooks.Models.DAL.Invoice;
 
@@ -11,22 +12,18 @@ namespace QuickBooks.Models.EntityService
         {
         }
 
-        public void Save(IList<Intuit.Ipp.Data.Invoice> entities, string accrualMethod = "Cash")
+        public void Save(IList<Intuit.Ipp.Data.Invoice> entities, string accountingMethod = "Accrual")
         {
             var baseEntity = new Invoice();
-            if (accrualMethod == "Cash") Save(entities, baseEntity);
+            if (accountingMethod == "Accrual") Save(entities, baseEntity);
             var paidedInvoices = entities.Where(x => x.LinkedTxn != null && IsPaid(x)).ToList();
             Save(paidedInvoices, baseEntity);
         }
 
-        private static bool IsPaid(Intuit.Ipp.Data.Invoice invoice)
+        private static bool IsPaid(Transaction invoice)
         {
             var lines = invoice.LinkedTxn;
-            foreach (var linkedTxn in lines)
-            {
-                if (linkedTxn.TxnType == "Payment" || (linkedTxn.TxnType == "ReimburseCharge")) return true;
-            }
-            return false;
+            return lines.Any(linkedTxn => linkedTxn.TxnType == "Payment" || (linkedTxn.TxnType == "ReimburseCharge"));
         }
     }
 }

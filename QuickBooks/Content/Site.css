@@ -36,7 +36,6 @@ textarea {
     visibility: hidden;
     width: 50px;
     height: 50px;
-
 }
 
 .navbar-header {
@@ -46,9 +45,8 @@ textarea {
 }
 
 .container {
-    
     font-family: sans-serif;
-    }
+}
 
 .navbar {
     text-align: center;
@@ -57,5 +55,17 @@ textarea {
 
 .navbar-collapse, .collapse {
     text-align: center;
-    
+}
+
+#pr_2, #pr_1 {
+    width: 180px;
+    height: 15px;
+    display: none;
+}
+
+#accmeth {
+    display: none;
+   }
+.btn-width {
+      width: 180px;
 }

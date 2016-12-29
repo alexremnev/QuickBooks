@@ -37,10 +37,12 @@ namespace QuickBooks.Controllers
             _estimateSrService = estimateService;
         }
 
-        public ActionResult Create()
+        [Route("{method:string}")]
+        public ActionResult Create(string method)
         {
             try
             {
+                var a = method;
                 var permission = _oauthService.Get();
                 var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
                     permission.AccessTokenSecret, _consumerKey, _consumerSecret);
@@ -50,10 +52,12 @@ namespace QuickBooks.Controllers
                 var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
                 //  _creditMemoService.Save(creditMemos);
                 var invoices = dataService.FindAll(new Invoice()).ToList();
-                //  _invoiceService.Save(invoices);
+                // _invoiceService.Save(invoices);
                 var sales = dataService.FindAll(new SalesReceipt()).ToList();
                 // _salesReceiptService.Save(sales);
-                return RedirectToAction("Index", "Home");
+                // return RedirectToAction("Index", "Home");
+                ViewBag.IsCreated = true;
+                return View("Index");
 
             }
             catch (Exception e)
@@ -77,12 +81,13 @@ namespace QuickBooks.Controllers
                 context.IppConfiguration.Message.Response.SerializationFormat =
                     Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
                 var dataService = new DataService(context);
-
-                _invoiceService.Recalculate(context, dataService);
+                //_invoiceService.Recalculate(context, dataService);
                 //                _creditMemoService.Recalculate(context, dataService);
                 //                _salesReceiptService.Recalculate(context, dataService);
                 //                _estimateSrService.Recalculate(context, dataService);
-                return RedirectToAction("Index", "Home");
+                ViewBag.IsRecalculated = true;
+                return View("Index");
+
             }
             catch (Exception e)
             {

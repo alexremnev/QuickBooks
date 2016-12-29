@@ -3,63 +3,63 @@
     ViewBag.Title = "Index";
 
 }
-<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
-<script type="text/javascript" src="https://js.appcenter.intuit.com/Content/IA/intuit.ipp.anywhere-1.3.5.js"></script>
-<script type="text/javascript">
-    $(document).ready(function () {
-
-        intuit.ipp.anywhere.setup({
-            grantUrl: "http://localhost:63793/Home/Result?connect=true",
-            datasources: {
-                quickbooks: true,
-                payments: false
-            }
-        });
-
-
-    });
-    function Show_image_2() {
-        setTimeout(function () {
-            $(document)
-             .ready(function () {
-                 $("#CreateSuccess").css("visibility", "visible");
-             });
-        }, 1000);
-    }
-
-    function Show_image_1() {
-        setTimeout(function () {
-        $(document)
-                .ready(function () {
-                    $("#RecalculateSuccess").css("visibility", "visible");
-                });
-        }, 1000);
-    }
-</script>
-
-<div id="connect-to-qbo-div">
-    @if (ViewBag.Access == true)
-    {
-        <p style="color: green">My app is connected to QuickBooks Online.</p>
-    }
-    else
-    {
-        <p style="color: red">My app is not connected to QuickBooks Online.</p>
-    }
-
-    <ipp:connecttointuit></ipp:connecttointuit>
-</div>
-
-<div>
-    @using (@Html.BeginForm("Recalculate", "Report"))
-    {
-        <button id="RecalculateBtn" onclick="Show_image_1()" class="btn btn-success" btn-success>Recalculate sales tax</button>
-        <img id="RecalculateSuccess" src="~/fonts/Галочка-зеленая.jpg" />
-    }
-    @using (@Html.BeginForm("Create", "Report"))
-    {
-        <button id="ReportBtn" onclick="Show_image_2()" class="btn btn-success" btn-success>Create Report</button>
-        <img id="CreateSuccess" src="~/fonts/Галочка-зеленая.jpg" />
-    }
-</div>
+@*<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>*@
+@*<script type="text/javascript" src="https://js.appcenter.intuit.com/Content/IA/intuit.ipp.anywhere-1.3.5.js"></script>*@
+@*<script type="text/javascript">*@
+@*    $(document).ready(function () {*@
+@**@
+@*        intuit.ipp.anywhere.setup({*@
+@*            grantUrl: "http://localhost:63793/Home/Result?connect=true",*@
+@*            datasources: {*@
+@*                quickbooks: true,*@
+@*                payments: false*@
+@*            }*@
+@*        });*@
+@**@
+@**@
+@*    });*@
+@*    function Show_image_2() {*@
+@*        setTimeout(function () {*@
+@*            $(document)*@
+@*             .ready(function () {*@
+@*                 $("#CreateSuccess").css("visibility", "visible");*@
+@*             });*@
+@*        }, 1000);*@
+@*    }*@
+@**@
+@*    function Show_image_1() {*@
+@*        setTimeout(function () {*@
+@*        $(document)*@
+@*                .ready(function () {*@
+@*                    $("#RecalculateSuccess").css("visibility", "visible");*@
+@*                });*@
+@*        }, 1000);*@
+@*    }*@
+@*</script>*@
+@**@
+@*<div id="connect-to-qbo-div">*@
+@*    @if (ViewBag.Access == true)*@
+@*    {*@
+@*        <p style="color: green">My app is connected to QuickBooks Online.</p>*@
+@*    }*@
+@*    else*@
+@*    {*@
+@*        <p style="color: red">My app is not connected to QuickBooks Online.</p>*@
+@*    }*@
+@**@
+@*    <ipp:connecttointuit></ipp:connecttointuit>*@
+@*</div>*@
+@**@
+@*<div>*@
+@*    @using (@Html.BeginForm("Recalculate", "Report"))*@
+@*    {*@
+@*        <button id="RecalculateBtn" onclick="Show_image_1()" class="btn btn-success" btn-success>Recalculate sales tax</button>*@
+@*        <img id="RecalculateSuccess" src="~/fonts/Галочка-зеленая.jpg" />*@
+@*    }*@
+@*    @using (@Html.BeginForm("Create", "Report"))*@
+@*    {*@
+@*        <button id="ReportBtn" onclick="Show_image_2()" class="btn btn-success" btn-success>Create Report</button>*@
+@*        <img id="CreateSuccess" src="~/fonts/Галочка-зеленая.jpg" />*@
+@*    }*@
+@*</div>*@
 

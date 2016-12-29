@@ -5,33 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title style="align-content: center"> Welcome to the QuickBooks application</title>
     <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
-    <link href="~/Content/bootstrap.min.css" rel="stylesheet" type="text/css" />
     <link href="~/Content/bootstrap.css" rel="stylesheet" />
-    <link href="~/Content/bootstrap-theme.css" rel="stylesheet" />
-@*    <script src="~/Scripts/modernizr-2.6.2.js"></script>*@
 </head>
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">
         <div class="container">
             <div class="navbar-header">
-             <div style="align-content: center"> Welcome to the QuickBooks application</div>
+                <div style="align-content: center"> Welcome to the QuickBooks application</div>
             </div>
             <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                </ul>
+                <ul class="nav navbar-nav"></ul>
             </div>
         </div>
     </div>
-
     <div class="container body-content">
+        <script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+        <script type="text/javascript" src="https://js.appcenter.intuit.com/Content/IA/intuit.ipp.anywhere-1.3.5.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                intuit.ipp.anywhere.setup({
+                    grantUrl: "http://localhost:63793/Home/Result?connect=true",
+                    datasources: {
+                        quickbooks: true,
+                        payments: false
+                    }
+                });
+            });
+            function F1() {
+                $("#pr_1").css("display", "inline-block");
+            }
+            function F2() {
+                $("#pr_2").css("display", "inline-block");
+                $("#ReportBtn").disabled = true;
+                $("#RecalculateBtn").disabled = true;
+            }
+            function F3() {
+                $("#RecalculateBtn").disabled = true;
+                $("#accmeth").css("display", "inline-block");
+            }
+        </script>
+        <div id="connect-to-qbo-div">
+            @if ((ViewBag.Access == true) || (ViewBag.isCreated == true) || (ViewBag.isRecalculated == true))
+            {
+                <p style="color: green">My app is connected to QuickBooks Online.</p>
+            }
+            else
+            {
+                <p style="color: red">My app is not connected to QuickBooks Online.</p>
+            }
+            <ipp:connecttointuit></ipp:connecttointuit>
+        </div>
+        <div>
+            @using (@Html.BeginForm("Recalculate", "Report"))
+            {
+
+                <button class="btn btn-success" id="RecalculateBtn" onclick="F1()">Recalculate sales tax</button>
+                <img id="RecalculateSuccess" src="~/fonts/Галочка-зеленая.jpg" />
+                <div>
+                    <progress id="pr_1">please wait</progress>
+                </div>
+            }
+        </div>
+        <div>
+            <button class="btn btn-success" id="ReportBtn" onclick="F3()">Create Report</button>
+            <img id="CreateSuccess" src="~/fonts/Галочка-зеленая.jpg" />
+
+            <div>
+                <progress id="pr_2"></progress>
+            </div>
+        </div>
+        <div id="accmeth">
+            <label>Choose accounting method</label>
+            @using (@Html.BeginForm("Create", "Report", new { method = "accrual" }, FormMethod.Get))
+            {
+                <button class="btn btn-success btn-width" onclick="F2()" value="Accrual Basis">Accrual Basis</button>
+            }
+            @using (@Html.BeginForm("Create", "Report", new { method = "cash" }, FormMethod.Get))
+            {
+                <button class="btn btn-success btn-width" onclick="F2()" value="Cash Basis">Cash Basis</button>
+            }
+
+        </div>
+
         @RenderBody()
         <hr />
         <footer>
             <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
         </footer>
     </div>
-
-@*    <script src="~/Scripts/jquery-1.10.2.min.js"></script>*@
-    <script src="~/Scripts/bootstrap.min.js"></script>
 </body>
 </html>

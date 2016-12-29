@@ -1,0 +1,23 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+@if (ViewBag.isCreated==true)
+{
+    <script>
+        $(document)
+            .ready(function () {
+                $("#CreateSuccess").css("visibility", "visible");
+            });
+    </script>
+}
+@if (ViewBag.IsRecalculated == true)
+{
+    <script>
+        $(document)
+               .ready(function () {
+                   $("#RecalculateSuccess").css("visibility", "visible");
+               });
+    </script>
+}
+
