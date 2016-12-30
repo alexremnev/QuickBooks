@@ -2,11 +2,15 @@
 using System.Configuration;
 using System.Linq;
 using System.Net;
+using System.Runtime;
 using System.Web.Mvc;
 using Common.Logging;
 using Intuit.Ipp.Core;
+using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
+using Intuit.Ipp.ReportService;
 using Intuit.Ipp.Security;
+using NHibernate.SqlCommand;
 using QuickBooks.Models.EntityService;
 using CreditMemo = Intuit.Ipp.Data.CreditMemo;
 using Invoice = Intuit.Ipp.Data.Invoice;
@@ -42,7 +46,6 @@ namespace QuickBooks.Controllers
         {
             try
             {
-                var a = method;
                 var permission = _oauthService.Get();
                 var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
                     permission.AccessTokenSecret, _consumerKey, _consumerSecret);
@@ -51,11 +54,12 @@ namespace QuickBooks.Controllers
                 var dataService = new DataService(context);
                 var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
                 //  _creditMemoService.Save(creditMemos);
+                var preferences = dataService.FindAll(new Preferences()).ToList();
+                // var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
                 var invoices = dataService.FindAll(new Invoice()).ToList();
-                // _invoiceService.Save(invoices);
+                //                 _invoiceService.Save(invoices, accountingMethod);
                 var sales = dataService.FindAll(new SalesReceipt()).ToList();
                 // _salesReceiptService.Save(sales);
-                // return RedirectToAction("Index", "Home");
                 ViewBag.IsCreated = true;
                 return View("Index");
 
@@ -96,4 +100,5 @@ namespace QuickBooks.Controllers
             }
         }
     }
+
 }

@@ -31,8 +31,7 @@ namespace QuickBooks.Models.EntityService
             try
             {
                 var service = new QueryService<T>(context);
-                //var entities = service.Select(x => x).ToList();
-                var entities = service.Where(x => x.DocNumber == 1012.ToString()).ToList();
+                var entities = service.Select(x => x).ToList();
                 var stateTaxCodeQueryService = new QueryService<TaxCode>(context);
                 var stateTaxCodes =
                     stateTaxCodeQueryService.ExecuteIdsQuery("Select * From TaxCode").ToList();
@@ -87,7 +86,7 @@ namespace QuickBooks.Models.EntityService
                     taxLine.AnyIntuitObject = taxLineDetail;
                     txnTaxDetail.TaxLine = new[] { taxLine };
                     entity.TxnTaxDetail = txnTaxDetail;
-                       dataService.Add(entity);
+                    dataService.Add(entity);
                 }
             }
             catch (Exception e)

@@ -33,15 +33,23 @@
             });
             function F1() {
                 $("#pr_1").css("display", "inline-block");
+                $("#ReportBtn").prop("disabled", true);
             }
             function F2() {
-                $("#pr_2").css("display", "inline-block");
-                $("#ReportBtn").disabled = true;
-                $("#RecalculateBtn").disabled = true;
+                $("#RecalculateBtn").prop("disabled", true);
+                $("#ReportBtn").prop("disabled", true);
+                $("#accmeth").css("display", "inline-block");
             }
             function F3() {
-                $("#RecalculateBtn").disabled = true;
-                $("#accmeth").css("display", "inline-block");
+                $("#pr_2").css("display", "inline-block");
+                $("#ReportBtn").prop("disabled", true);
+                $("#RecalculateBtn").prop("disabled", true);
+                $("#accmeth").css("display", "none");
+            }
+            function F4() {
+                $("#accmeth").css("display", "none");
+                $("#RecalculateBtn").prop("disabled", false);
+                $("#ReportBtn").prop("disabled", false);
             }
         </script>
         <div id="connect-to-qbo-div">
@@ -67,7 +75,7 @@
             }
         </div>
         <div>
-            <button class="btn btn-success" id="ReportBtn" onclick="F3()">Create Report</button>
+            <button class="btn btn-success" id="ReportBtn" onclick="F2()">Create Report</button>
             <img id="CreateSuccess" src="~/fonts/Галочка-зеленая.jpg" />
 
             <div>
@@ -78,13 +86,13 @@
             <label>Choose accounting method</label>
             @using (@Html.BeginForm("Create", "Report", new { method = "accrual" }, FormMethod.Get))
             {
-                <button class="btn btn-success btn-width" onclick="F2()" value="Accrual Basis">Accrual Basis</button>
+                <button class="btn btn-success btn-width" onclick="F3()" value="Accrual Basis">Accrual Basis</button>
             }
             @using (@Html.BeginForm("Create", "Report", new { method = "cash" }, FormMethod.Get))
             {
-                <button class="btn btn-success btn-width" onclick="F2()" value="Cash Basis">Cash Basis</button>
+                <button class="btn btn-success btn-width" onclick="F3()" value="Cash Basis">Cash Basis</button>
             }
-
+            <button class="btn btn-success btn-width" onclick="F4()" value="Cancel">Cancel</button>
         </div>
 
         @RenderBody()

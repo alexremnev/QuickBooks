@@ -12,10 +12,10 @@ namespace QuickBooks.Models.EntityService
         {
         }
 
-        public void Save(IList<Intuit.Ipp.Data.Invoice> entities, string accountingMethod = "Accrual")
+        public void Save(IList<Intuit.Ipp.Data.Invoice> entities, ReportBasisEnum accountingMethod = ReportBasisEnum.Accrual)
         {
             var baseEntity = new Invoice();
-            if (accountingMethod == "Accrual") Save(entities, baseEntity);
+            if (accountingMethod == ReportBasisEnum.Accrual) Save(entities, baseEntity);
             var paidedInvoices = entities.Where(x => x.LinkedTxn != null && IsPaid(x)).ToList();
             Save(paidedInvoices, baseEntity);
         }
