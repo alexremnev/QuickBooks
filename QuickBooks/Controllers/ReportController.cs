@@ -41,8 +41,7 @@ namespace QuickBooks.Controllers
             _estimateSrService = estimateService;
         }
 
-        [Route("{method:string}")]
-        public ActionResult Create(string method)
+      public ActionResult Create()
         {
             try
             {
@@ -55,14 +54,13 @@ namespace QuickBooks.Controllers
                 var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
                 //  _creditMemoService.Save(creditMemos);
                 var preferences = dataService.FindAll(new Preferences()).ToList();
-                // var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
+                var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
                 var invoices = dataService.FindAll(new Invoice()).ToList();
-                //                 _invoiceService.Save(invoices, accountingMethod);
-                var sales = dataService.FindAll(new SalesReceipt()).ToList();
-                // _salesReceiptService.Save(sales);
+                //  _invoiceService.Save(invoices, accountingMethod);
+                var salesReceipts = dataService.FindAll(new SalesReceipt()).ToList();
+                //  _salesReceiptService.Save(salesReceipts);
                 ViewBag.IsCreated = true;
                 return View("Index");
-
             }
             catch (Exception e)
             {

@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
+using System.Net;
 using System.Web.Mvc;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
 using QuickBooks.Models.DAL;
 using QuickBooks.Models.EntityService;
+using QuickBooks.Models.Utility;
 
 namespace QuickBooks.Controllers
 {
@@ -30,7 +33,23 @@ namespace QuickBooks.Controllers
         {
             var permission = _oauthService.Get();
             if (permission.AccessToken != null) ViewBag.Access = true;
-            return View();
+            string jsonData = null;
+            object hmacHeaderSignature = null;
+            if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
+            {
+                System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
+                jsonData = new StreamReader(Request.InputStream).ReadToEnd();
+                hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
+            }
+            var isRequestvalid = ProcessNotificationData.Validate(jsonData, hmacHeaderSignature);
+            if (isRequestvalid)
+            {
+                //---------------
+
+                //---------------
+                return new HttpStatusCodeResult(HttpStatusCode.OK);
+            }
+            return View(jsonData);
         }
 
         public ActionResult Result()

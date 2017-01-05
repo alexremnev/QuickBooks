@@ -103,19 +103,20 @@ namespace QuickBooks.Models.EntityService
                 foreach (var entity in entities)
                 {
                     var lineItems = new List<LineItem>();
+                    if (entity.Id != null) baseEntity.EntityId = entity.Id;
                     if (entity.DocNumber != null) baseEntity.DocNumber = entity.DocNumber;
                     baseEntity.TxnDate = entity.TxnDate;
                     if (entity.BillAddr.Line1 != null) baseEntity.NameAndId = entity.BillAddr.Line1;
-                    var adress = new StringBuilder();
+                    var address = new StringBuilder();
                     if (entity.ShipAddr != null)
                     {
-                        if (entity.ShipAddr.Line1 != null) adress.Append(entity.ShipAddr.Line1);
-                        if (entity.ShipAddr.City != null) adress.Append(" " + entity.ShipAddr.City);
+                        if (entity.ShipAddr.Line1 != null) address.Append(entity.ShipAddr.Line1);
+                        if (entity.ShipAddr.City != null) address.Append(" " + entity.ShipAddr.City);
                         if (entity.ShipAddr.CountrySubDivisionCode != null)
-                            adress.Append(" " + entity.ShipAddr.CountrySubDivisionCode);
-                        if (entity.ShipAddr.PostalCode != null) adress.Append(", " + entity.ShipAddr.PostalCode);
+                            address.Append(" " + entity.ShipAddr.CountrySubDivisionCode);
+                        if (entity.ShipAddr.PostalCode != null) address.Append(", " + entity.ShipAddr.PostalCode);
                     }
-                    baseEntity.ShipAddr = adress.ToString();
+                    baseEntity.ShipAddr = address.ToString();
 
                     if (entity.Line == null)
                     {

@@ -305,6 +305,8 @@
     <Compile Include="Models\EntityService\InvoiceService.cs" />
     <Compile Include="Models\EntityService\ICreditMemoService.cs" />
     <Compile Include="Models\EntityService\IInvoiceService.cs" />
+    <Compile Include="Models\Utility\ProcessNotificationData.cs" />
+    <Compile Include="Models\Utility\NotificationEntity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

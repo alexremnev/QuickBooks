@@ -4,6 +4,7 @@
     <id name="Id">
       <generator class="identity"/>
     </id>
+    <property name="EntityId" column="EntityId"/>
     <property name="DocNumber" column="DocNumber" />
     <property name="TxnDate" column="TxnDate" />
     <property name="NameAndId" column="NameAndId"/>

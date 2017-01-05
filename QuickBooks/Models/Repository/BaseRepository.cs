@@ -6,7 +6,7 @@ using Spring.Transaction.Interceptor;
 
 namespace QuickBooks.Models.Repository
 {
-    public class BaseRepository<T> : IBaseRepository<T> where T : class
+    public abstract class BaseRepository<T> : IBaseRepository<T> where T : class
     {
         private readonly ILog _log;
         private readonly string _entityName;
@@ -29,8 +29,76 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                 _log.Error($"Exception occured when system tried to create an {_entityName}", e);
+                _log.Error($"Exception occured when system tried to create an {_entityName}", e);
                 throw;
+            }
+        }
+
+        public T Get(int id)
+        {
+            using (var session = Sessionfactory.OpenSession())
+            {
+                try
+                {
+                    if (id <= 0) throw new Exception("Id can not be below 1");
+                    return session.Get<T>(id);
+                }
+                catch (Exception e)
+                {
+                    _log.Error(
+                        $"Exception occured when system tried to get entity by id ={id} from database", e);
+                    throw;
+                }
+            }
+        }
+
+        [Transaction]
+        public void Update(T entity)
+        {
+            if (entity == null) throw new ArgumentNullException(nameof(entity));
+            try
+            {
+                var ht = new HibernateTemplate(Sessionfactory);
+                ht.Update(entity);
+            }
+            catch (Exception e)
+            {
+                _log.Error($"Exception occured when system tried to update {_entityName}", e);
+                throw;
+            }
+        }
+
+
+        [Transaction]
+        public void Delete(int id)
+        {
+            var entity = Get(id);
+
+            if (entity == null) return;
+
+            using (var session = Sessionfactory.OpenSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    try
+                    {
+                        session.Delete(entity);
+                        transaction.Commit();
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Error($"Exception occured when system tried to delete the object by id= {id}", e);
+                        try
+                        {
+                            transaction.Rollback();
+                        }
+                        catch (HibernateException exception)
+                        {
+                            _log.Error("Exception occurred when system tried to roll back transaction", exception);
+                        }
+                        throw;
+                    }
+                }
             }
         }
     }
