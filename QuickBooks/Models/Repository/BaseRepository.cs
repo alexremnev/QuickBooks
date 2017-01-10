@@ -8,13 +8,13 @@ namespace QuickBooks.Models.Repository
 {
     public abstract class BaseRepository<T> : IBaseRepository<T> where T : class
     {
-        private readonly ILog _log;
+        protected readonly ILog Log;
         private readonly string _entityName;
         public ISessionFactory Sessionfactory { get; set; }
 
         protected BaseRepository(string entityName)
         {
-            _log = LogManager.GetLogger(GetType());
+            Log = LogManager.GetLogger(GetType());
             _entityName = entityName;
         }
 
@@ -29,7 +29,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when system tried to create an {_entityName}", e);
+                Log.Error($"Exception occured when system tried to create an {_entityName}", e);
                 throw;
             }
         }
@@ -45,7 +45,7 @@ namespace QuickBooks.Models.Repository
                 }
                 catch (Exception e)
                 {
-                    _log.Error(
+                    Log.Error(
                         $"Exception occured when system tried to get entity by id ={id} from database", e);
                     throw;
                 }
@@ -63,7 +63,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when system tried to update {_entityName}", e);
+                Log.Error($"Exception occured when system tried to update {_entityName}", e);
                 throw;
             }
         }
@@ -87,14 +87,14 @@ namespace QuickBooks.Models.Repository
                     }
                     catch (Exception e)
                     {
-                        _log.Error($"Exception occured when system tried to delete the object by id= {id}", e);
+                        Log.Error($"Exception occured when system tried to delete the object by id= {id}", e);
                         try
                         {
                             transaction.Rollback();
                         }
                         catch (HibernateException exception)
                         {
-                            _log.Error("Exception occurred when system tried to roll back transaction", exception);
+                            Log.Error("Exception occurred when system tried to roll back transaction", exception);
                         }
                         throw;
                     }

@@ -10,82 +10,79 @@ using Intuit.Ipp.LinqExtender;
 using Intuit.Ipp.QueryFilter;
 using QuickBooks.Models.DAL;
 using QuickBooks.Models.ReportService;
+using QuickBooks.Models.Repository;
 
 namespace QuickBooks.Models.EntityService
 {
-    public abstract class BaseService<T> : IBaseService where T : SalesTransaction
+    public abstract class BaseService<T> : IBaseService<T> where T : SalesTransaction
     {
         private readonly ILog _log;
-        protected BaseService(IReportService service, string entityName)
+        protected BaseService(IReportService service, ITaxRepository taxRepository, string entityName)
         {
             _service = service;
             _log = LogManager.GetLogger(GetType());
             _entityName = entityName;
+            _taxRepository = taxRepository;
         }
 
         private readonly IReportService _service;
+        private readonly ITaxRepository _taxRepository;
         private readonly string _entityName;
 
-        public void Recalculate(ServiceContext context, DataService dataService)
+        public void Recalculate(ServiceContext context)
         {
             try
             {
+                var taxRateDictionary = new Dictionary<string, decimal>();
+                var taxRateList = _taxRepository.List();
+                foreach (var item in taxRateList)
+                {
+                    taxRateDictionary.Add(item.CountrySubDivisionCode, item.Tax);
+                }
+                //------------------------------------------------------
+                //ADD calculating tax sales using tax rate from database.
+                //------------------------------------------------------
+                var dataService = new DataService(context);
                 var service = new QueryService<T>(context);
                 var entities = service.Select(x => x).ToList();
-                var stateTaxCodeQueryService = new QueryService<TaxCode>(context);
-                var stateTaxCodes =
-                    stateTaxCodeQueryService.ExecuteIdsQuery("Select * From TaxCode").ToList();
+                //                var entities = service.Where(x => x.DocNumber == 1004.ToString()).ToList();//todo it's test data
+                var customerDictionary = new Dictionary<string, string>();
+                var customers = dataService.FindAll(new Customer()).ToList();
+                foreach (var customer in customers)
+                {
+                    if (customer.FullyQualifiedName.Contains(":"))
+                    {
+                        var subCompany = customer.FullyQualifiedName.Split(':');
+                        customer.FullyQualifiedName = subCompany[1];
+                    }
+                    if (customer.BillAddr == null) { customerDictionary.Add(customer.FullyQualifiedName, null); continue; }
+                    customerDictionary.Add(customer.FullyQualifiedName, customer.BillAddr.CountrySubDivisionCode);
+                }
 
                 foreach (var entity in entities)
                 {
-                    TaxCode stateTaxCode;
-                    string state = null;
-                    if (entity.ShipAddr != null) state = entity.ShipAddr.CountrySubDivisionCode;
-                    else if (entity.BillAddr != null)
+                    foreach (var line in entity.Line)
                     {
-                        state = entity.BillAddr.CountrySubDivisionCode;
-                        if (state == null)
+                        var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
+                        if (lineDetail != null)
                         {
-                            if (entity.BillAddr.Line4.Contains("CA")) state = "CA";
-                            else if (entity.BillAddr.Line4.Contains("NY")) state = "NY";
+                            lineDetail.TaxCodeRef.Value = "TAX";
                         }
                     }
 
-                    switch (state)
+                    switch (customerDictionary[entity.CustomerRef.name])
                     {
                         case "CA":
-                            {
-                                stateTaxCode = stateTaxCodes[3];
-                                break;
-                            }
+                            entity.TxnTaxDetail.TxnTaxCodeRef.Value = 5.ToString();
+                            break;
                         case "NY":
-                            {
-                                stateTaxCode = stateTaxCodes[7];
-                                break;
-                            }
+                            entity.TxnTaxDetail.TxnTaxCodeRef.Value = 6.ToString();
+                            break;
                         default:
-                            {
-                                stateTaxCode = stateTaxCodes[6];
-                                break;
-                            }
+                            entity.TxnTaxDetail.TxnTaxCodeRef.Value = 7.ToString();
+                            break;
                     }
 
-                    var txnTaxDetail = new TxnTaxDetail
-                    {
-                        TxnTaxCodeRef = new ReferenceType
-                        {
-                            name = stateTaxCode.Name,
-                            Value = stateTaxCode.Id
-                        }
-                    };
-                    var taxLine = new Line { DetailType = LineDetailTypeEnum.TaxLineDetail };
-                    var taxLineDetail = new TaxLineDetail
-                    {
-                        TaxRateRef = stateTaxCode.SalesTaxRateList.TaxRateDetail[0].TaxRateRef
-                    };
-                    taxLine.AnyIntuitObject = taxLineDetail;
-                    txnTaxDetail.TaxLine = new[] { taxLine };
-                    entity.TxnTaxDetail = txnTaxDetail;
                     dataService.Add(entity);
                 }
             }
@@ -103,7 +100,7 @@ namespace QuickBooks.Models.EntityService
                 foreach (var entity in entities)
                 {
                     var lineItems = new List<LineItem>();
-                    if (entity.Id != null) baseEntity.EntityId = entity.Id;
+                    if (entity.Id != null) baseEntity.Id = entity.Id;
                     if (entity.DocNumber != null) baseEntity.DocNumber = entity.DocNumber;
                     baseEntity.TxnDate = entity.TxnDate;
                     if (entity.BillAddr.Line1 != null) baseEntity.NameAndId = entity.BillAddr.Line1;

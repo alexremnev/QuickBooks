@@ -21,6 +21,7 @@ namespace QuickBooks.Models.ReportService
             {
                 var report = new Report()
                 {
+                    Id = entity.Id,
                     ShipAddr = entity.ShipAddr,
                     DocNumber = entity.DocNumber,
                     LineItems = entity.LineItems,
@@ -35,5 +36,25 @@ namespace QuickBooks.Models.ReportService
                 throw;
             }
         }
+
+        public Report Get(string id)
+        {
+            try
+            {
+                var report = _repository.Get(Convert.ToInt32(id));
+                return report;
+            }
+            catch (Exception e)
+            {
+                _log.Error("Exception occured when you tried to find report by entityId", e);
+                throw;
+            }
+        }
+
+        public void Delete(int id)
+        {
+            _repository.Delete(id);
+        }
+
     }
 }

@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
+using Intuit.Ipp.Data;
 
 namespace QuickBooks.Models.EntityService
 {
-    public interface ICreditMemoService : IBaseService
+    public interface ICreditMemoService : IBaseService<CreditMemo>
     {
         /// <summary>
         /// Save the list of Credit Memo in database.
         /// </summary>
         /// <param name="entities">the list of Credit Memo.</param>
-        void Save(IList<Intuit.Ipp.Data.CreditMemo> entities);
+        void Save(IList<CreditMemo> entities);
     }
 }

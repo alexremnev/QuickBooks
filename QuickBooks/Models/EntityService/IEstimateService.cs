@@ -1,6 +1,8 @@
-﻿namespace QuickBooks.Models.EntityService
+﻿using Intuit.Ipp.Data;
+
+namespace QuickBooks.Models.EntityService
 {
-    public interface IEstimateService : IBaseService
+    public interface IEstimateService : IBaseService<Estimate>
     {
     }
 }

@@ -4,7 +4,7 @@
     <id name="Id">
       <generator class="identity"/>
     </id>
-    <property name="RealmId" column="RealmId" />
+    <property name="RealmId" unique="true" column="RealmId" />
     <property name="AccessToken" type="QuickBooks.Models.DAL.EncryptedString, QuickBooks" column="AccessToken"/>
     <property name="AccessTokenSecret" type="QuickBooks.Models.DAL.EncryptedString, QuickBooks" column="AccessTokenSecret"/>
   </class>

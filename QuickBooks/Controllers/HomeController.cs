@@ -6,8 +6,10 @@ using System.Net;
 using System.Web.Mvc;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
+using Newtonsoft.Json;
 using QuickBooks.Models.DAL;
 using QuickBooks.Models.EntityService;
+using QuickBooks.Models.ReportService;
 using QuickBooks.Models.Utility;
 
 namespace QuickBooks.Controllers
@@ -15,9 +17,11 @@ namespace QuickBooks.Controllers
     public class HomeController : Controller
     {
         private readonly IOAuthService _oauthService;
-        public HomeController(IOAuthService oAuthService)
+        private readonly IReportService _reportService;
+        public HomeController(IOAuthService oAuthService, IReportService reportService)
         {
             _oauthService = oAuthService;
+            _reportService = reportService;
         }
         private static readonly string RequestTokenUrl = ConfigurationManager.AppSettings["GET_REQUEST_TOKEN"];
         private static readonly string AccessTokenUrl = ConfigurationManager.AppSettings["GET_ACCESS_TOKEN"];
@@ -33,23 +37,35 @@ namespace QuickBooks.Controllers
         {
             var permission = _oauthService.Get();
             if (permission.AccessToken != null) ViewBag.Access = true;
-            string jsonData = null;
+            string notifications = null;
             object hmacHeaderSignature = null;
             if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
             {
                 System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
-                jsonData = new StreamReader(Request.InputStream).ReadToEnd();
+                notifications = new StreamReader(Request.InputStream).ReadToEnd();
                 hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
             }
-            var isRequestvalid = ProcessNotificationData.Validate(jsonData, hmacHeaderSignature);
+            var isRequestvalid = ProcessNotificationData.Validate(notifications, hmacHeaderSignature);
             if (isRequestvalid)
             {
-                //---------------
+                var webhooksData = JsonConvert.DeserializeObject<NotificationEntity.WebhooksData>(notifications);
+                foreach (var notification in webhooksData.EventNotifications)
+                {
+                    foreach (var entity in notification.DataEvents.Entities)
+                    {
+                        var id = Convert.ToInt32(entity.Id);
+                        if (entity.Operation == "Delete") _reportService.Delete(id);
+                        if (entity.Operation=="Create") _reportService.Save();
+                    
+                    }
 
-                //---------------
+                }
+
+
+
                 return new HttpStatusCodeResult(HttpStatusCode.OK);
             }
-            return View(jsonData);
+            return View(notifications);
         }
 
         public ActionResult Result()
@@ -112,7 +128,7 @@ namespace QuickBooks.Controllers
         private void GetAccessToken()
         {
             IOAuthSession clientSession = CreateSession();
-            IToken accessToken = clientSession.ExchangeRequestTokenForAccessToken(_requesToken, _verifier);
+            var accessToken = clientSession.ExchangeRequestTokenForAccessToken(_requesToken, _verifier);
             System.Web.HttpContext.Current.Session["accessToken"] = accessToken.Token;
             System.Web.HttpContext.Current.Session["accessTokenSecret"] = accessToken.TokenSecret;
         }

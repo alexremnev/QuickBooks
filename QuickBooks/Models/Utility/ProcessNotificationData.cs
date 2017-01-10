@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common.Logging;
 using Newtonsoft.Json;
+using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Models.Utility
 {
@@ -27,9 +28,9 @@ namespace QuickBooks.Models.Utility
                 var hmacBytes = hmac.ComputeHash(dataBytes);
                 var createPayloadSignature = Convert.ToBase64String(hmacBytes);
                 if ((string)hmacHeaderSignature != createPayloadSignature) return false;
-                var thread = new Thread(AddToQueue);
-                thread.Start();
-                thread.Join(60000);
+//                var thread = new Thread(AddToQueue);
+//                thread.Start();
+//                thread.Join(60000);
                 return true;
             }
             catch (Exception e)

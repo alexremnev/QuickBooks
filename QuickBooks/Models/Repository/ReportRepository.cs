@@ -1,4 +1,5 @@
-﻿using QuickBooks.Models.DAL;
+﻿using System;
+using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Models.Repository
 {
@@ -10,5 +11,5 @@ namespace QuickBooks.Models.Repository
         {
         }
 
-    }
+        }
 }

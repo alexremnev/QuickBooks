@@ -2,13 +2,14 @@
 using System.Linq;
 using Intuit.Ipp.Data;
 using QuickBooks.Models.ReportService;
+using QuickBooks.Models.Repository;
 using Invoice = QuickBooks.Models.DAL.Invoice;
 
 namespace QuickBooks.Models.EntityService
 {
     public class InvoiceService : BaseService<Intuit.Ipp.Data.Invoice>, IInvoiceService
     {
-        public InvoiceService(IReportService service) : base(service, "Invoice")
+        public InvoiceService(IReportService service, ITaxRepository repository) : base(service, repository, "Invoice")
         {
         }
 

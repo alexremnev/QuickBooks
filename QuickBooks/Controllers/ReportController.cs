@@ -2,19 +2,13 @@
 using System.Configuration;
 using System.Linq;
 using System.Net;
-using System.Runtime;
 using System.Web.Mvc;
 using Common.Logging;
 using Intuit.Ipp.Core;
 using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
-using Intuit.Ipp.ReportService;
 using Intuit.Ipp.Security;
-using NHibernate.SqlCommand;
 using QuickBooks.Models.EntityService;
-using CreditMemo = Intuit.Ipp.Data.CreditMemo;
-using Invoice = Intuit.Ipp.Data.Invoice;
-using SalesReceipt = Intuit.Ipp.Data.SalesReceipt;
 
 namespace QuickBooks.Controllers
 {
@@ -41,7 +35,7 @@ namespace QuickBooks.Controllers
             _estimateSrService = estimateService;
         }
 
-      public ActionResult Create()
+        public ActionResult Create()
         {
             try
             {
@@ -51,14 +45,17 @@ namespace QuickBooks.Controllers
                 var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
                     oauthValidator);
                 var dataService = new DataService(context);
+       
                 var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
-                //  _creditMemoService.Save(creditMemos);
+                _creditMemoService.Save(creditMemos);
+           
                 var preferences = dataService.FindAll(new Preferences()).ToList();
                 var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
                 var invoices = dataService.FindAll(new Invoice()).ToList();
-                //  _invoiceService.Save(invoices, accountingMethod);
+                _invoiceService.Save(invoices, accountingMethod);
+             
                 var salesReceipts = dataService.FindAll(new SalesReceipt()).ToList();
-                //  _salesReceiptService.Save(salesReceipts);
+                _salesReceiptService.Save(salesReceipts);
                 ViewBag.IsCreated = true;
                 return View("Index");
             }
@@ -69,34 +66,33 @@ namespace QuickBooks.Controllers
             }
         }
 
-        public ActionResult Recalculate()
-        {
-            try
-            {
-                var permission = _oauthService.Get();
-                var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
-                    permission.AccessTokenSecret, _consumerKey, _consumerSecret);
-                var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
-                    oauthValidator);
-                context.IppConfiguration.Message.Request.SerializationFormat =
-                    Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-                context.IppConfiguration.Message.Response.SerializationFormat =
-                    Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-                var dataService = new DataService(context);
-                //_invoiceService.Recalculate(context, dataService);
-                //                _creditMemoService.Recalculate(context, dataService);
-                //                _salesReceiptService.Recalculate(context, dataService);
-                //                _estimateSrService.Recalculate(context, dataService);
-                ViewBag.IsRecalculated = true;
-                return View("Index");
-
-            }
-            catch (Exception e)
-            {
-                _log.Error("Exception occured when you tried to recalculate sales tax", e);
-                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
-            }
-        }
+                public ActionResult Recalculate()
+                {
+                    try
+                    {
+                        var permission = _oauthService.Get();
+                        var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
+                            permission.AccessTokenSecret, _consumerKey, _consumerSecret);
+                        var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
+                            oauthValidator);
+                        context.IppConfiguration.Message.Request.SerializationFormat =
+                            Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+                        context.IppConfiguration.Message.Response.SerializationFormat =
+                            Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+                      _invoiceService.Recalculate(context);
+//                                        _creditMemoService.Recalculate(context);
+                        //                _salesReceiptService.Recalculate(context);
+                        //                _estimateSrService.Recalculate(context);
+                        ViewBag.IsRecalculated = true;
+                        return View("Index");
+        
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Error("Exception occured when you tried to recalculate sales tax", e);
+                        return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
+                    }
+                }
     }
 
 }

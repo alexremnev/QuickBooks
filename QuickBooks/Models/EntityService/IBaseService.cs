@@ -1,15 +1,15 @@
-﻿using Intuit.Ipp.Core;
-using Intuit.Ipp.DataService;
+﻿using System.Collections.Generic;
+using Intuit.Ipp.Core;
+using Intuit.Ipp.Data;
 
 namespace QuickBooks.Models.EntityService
 {
-    public interface IBaseService
+    public interface IBaseService<T> where T: SalesTransaction
     {
         /// <summary>
         /// Recalculate sales tax.
         /// </summary>
         /// <param name="context">the entity of Intuit.Ipp.Core.ServiceContext.</param>
-        /// <param name="dataService">the entity of Intuit.Ipp.DataService.DataService.</param>
-        void Recalculate(ServiceContext context, DataService dataService);
+        void Recalculate(ServiceContext context);
     }
 }
