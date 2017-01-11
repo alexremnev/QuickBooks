@@ -1,10 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" namespace="QuickBooks.Models.DAL" assembly="QuickBooks">
   <class name="OAuth" table ="OAuth">
-    <id name="Id">
-      <generator class="identity"/>
-    </id>
-    <property name="RealmId" unique="true" column="RealmId" />
+    <id name="RealmId" column="RealmId" />
     <property name="AccessToken" type="QuickBooks.Models.DAL.EncryptedString, QuickBooks" column="AccessToken"/>
     <property name="AccessTokenSecret" type="QuickBooks.Models.DAL.EncryptedString, QuickBooks" column="AccessTokenSecret"/>
   </class>

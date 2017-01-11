@@ -7,7 +7,8 @@ namespace QuickBooks.Models.Repository
         /// <summary>
         /// Return the entity of Aouth.
         /// </summary>
+        /// <param name="realmId">entity realmId</param>
         /// <returns>returns the entity of OAuth.</returns>
-        OAuth Get();
+        OAuth Get(string realmId);
     }
 }

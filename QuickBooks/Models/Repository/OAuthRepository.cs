@@ -9,18 +9,18 @@ namespace QuickBooks.Models.Repository
     {
         private const string NameEntity = "OAuth";
         private const int Id = 1;
-        private ILog _log = LogManager.GetLogger<OAuthRepository>();
+        private readonly ILog _log = LogManager.GetLogger<OAuthRepository>();
 
         public OAuthRepository() : base(NameEntity)
         {
         }
 
-        public OAuth Get()
+        public OAuth Get(string realmId)
         {
             try
             {
                 var ht = new HibernateTemplate(Sessionfactory);
-                return (OAuth)ht.Get(typeof(OAuth), Id) ?? new OAuth();
+                return (OAuth)ht.Get(typeof(OAuth), realmId) ?? new OAuth();
             }
             catch (Exception e)
             {

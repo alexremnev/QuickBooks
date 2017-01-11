@@ -17,10 +17,19 @@ namespace QuickBooks.Controllers
     public class HomeController : Controller
     {
         private readonly IOAuthService _oauthService;
+        private readonly IInvoiceService _invoiceService;
+        private readonly ISalesReceiptService _salesReceiptService;
+        private readonly IEstimateService _estimateService;
+        private readonly ICreditMemoService _creditMemoService;
         private readonly IReportService _reportService;
-        public HomeController(IOAuthService oAuthService, IReportService reportService)
+
+        public HomeController(IOAuthService oAuthService, IInvoiceService invoiceService, ISalesReceiptService salesReceiptService, IEstimateService estimateService, ICreditMemoService creditMemoService, IReportService reportService)
         {
             _oauthService = oAuthService;
+            _invoiceService = invoiceService;
+            _salesReceiptService = salesReceiptService;
+            _estimateService = estimateService;
+            _creditMemoService = creditMemoService;
             _reportService = reportService;
         }
         private static readonly string RequestTokenUrl = ConfigurationManager.AppSettings["GET_REQUEST_TOKEN"];
@@ -35,7 +44,8 @@ namespace QuickBooks.Controllers
 
         public ActionResult Index()
         {
-            var permission = _oauthService.Get();
+            var realmId = ConfigurationManager.AppSettings["realmId"];
+            var permission = _oauthService.Get(realmId);
             if (permission.AccessToken != null) ViewBag.Access = true;
             string notifications = null;
             object hmacHeaderSignature = null;
@@ -49,19 +59,35 @@ namespace QuickBooks.Controllers
             if (isRequestvalid)
             {
                 var webhooksData = JsonConvert.DeserializeObject<NotificationEntity.WebhooksData>(notifications);
+                var context = _oauthService.GetServiceContext();
                 foreach (var notification in webhooksData.EventNotifications)
                 {
                     foreach (var entity in notification.DataEvents.Entities)
                     {
-                        var id = Convert.ToInt32(entity.Id);
-                        if (entity.Operation == "Delete") _reportService.Delete(id);
-                        if (entity.Operation=="Create") _reportService.Save();
-                    
+                        if (entity.Operation == "Delete")
+                        {
+                            var id = Convert.ToInt32(entity.Id);
+                            _reportService.Delete(id);
+                            continue;
+                        }
+
+                        switch (entity.Name)
+                        {
+                            case "Invoice":
+                                _invoiceService.Update(context, entity);
+                                break;
+                            case "CreditMemo":
+                                _creditMemoService.Update(context, entity);
+                                break;
+                            case "Estimate":
+                                _estimateService.Update(context, entity);
+                                break;
+                            case "SalesReceipt":
+                             _salesReceiptService.Update(context, entity);
+                                break;
+                        }
                     }
-
                 }
-
-
 
                 return new HttpStatusCodeResult(HttpStatusCode.OK);
             }

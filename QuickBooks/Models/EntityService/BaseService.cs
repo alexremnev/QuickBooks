@@ -17,19 +17,21 @@ namespace QuickBooks.Models.EntityService
     public abstract class BaseService<T> : IBaseService<T> where T : SalesTransaction
     {
         private readonly ILog _log;
-        protected BaseService(IReportService service, ITaxRepository taxRepository, string entityName)
+        private readonly BaseEntity _baseEntity;
+        protected BaseService(IReportService service, ITaxRepository taxRepository, BaseEntity baseEntity, string entityName)
         {
-            _service = service;
+            _reportservice = service;
             _log = LogManager.GetLogger(GetType());
             _entityName = entityName;
             _taxRepository = taxRepository;
+            _baseEntity = baseEntity;
         }
 
-        private readonly IReportService _service;
+        private readonly IReportService _reportservice;
         private readonly ITaxRepository _taxRepository;
         private readonly string _entityName;
 
-        public void Recalculate(ServiceContext context)
+        public IList<T> Recalculate(ServiceContext context, IList<T> recalculateEntity = null)
         {
             try
             {
@@ -44,8 +46,8 @@ namespace QuickBooks.Models.EntityService
                 //------------------------------------------------------
                 var dataService = new DataService(context);
                 var service = new QueryService<T>(context);
-                var entities = service.Select(x => x).ToList();
-                //                var entities = service.Where(x => x.DocNumber == 1004.ToString()).ToList();//todo it's test data
+                var entities = recalculateEntity ?? service.Select(x => x).ToList();
+//              var entities = service.Where(x => x.DocNumber == 1007.ToString()).ToList();//todo it's test data
                 var customerDictionary = new Dictionary<string, string>();
                 var customers = dataService.FindAll(new Customer()).ToList();
                 foreach (var customer in customers)
@@ -55,7 +57,11 @@ namespace QuickBooks.Models.EntityService
                         var subCompany = customer.FullyQualifiedName.Split(':');
                         customer.FullyQualifiedName = subCompany[1];
                     }
-                    if (customer.BillAddr == null) { customerDictionary.Add(customer.FullyQualifiedName, null); continue; }
+                    if (customer.BillAddr == null)
+                    {
+                        customerDictionary.Add(customer.FullyQualifiedName, null);
+                        continue;
+                    }
                     customerDictionary.Add(customer.FullyQualifiedName, customer.BillAddr.CountrySubDivisionCode);
                 }
 
@@ -66,6 +72,7 @@ namespace QuickBooks.Models.EntityService
                         var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
                         if (lineDetail != null)
                         {
+                            if (lineDetail.TaxCodeRef==null) lineDetail.TaxCodeRef =new ReferenceType() {Value = "TAX"};
                             lineDetail.TaxCodeRef.Value = "TAX";
                         }
                     }
@@ -73,18 +80,21 @@ namespace QuickBooks.Models.EntityService
                     switch (customerDictionary[entity.CustomerRef.name])
                     {
                         case "CA":
-                            entity.TxnTaxDetail.TxnTaxCodeRef.Value = 5.ToString();
+                            // entity.TxnTaxDetail.TxnTaxCodeRef.Value = 5.ToString();
+                            entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType() { Value = 5.ToString() };
                             break;
                         case "NY":
-                            entity.TxnTaxDetail.TxnTaxCodeRef.Value = 6.ToString();
+                            entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType() { Value = 6.ToString() };
                             break;
                         default:
-                            entity.TxnTaxDetail.TxnTaxCodeRef.Value = 7.ToString();
+                            entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType() { Value = 7.ToString() };
                             break;
                     }
-
-                    dataService.Add(entity);
+                    
+                   // dataService.Add(entity);
+                    dataService.Update(entity);
                 }
+                return entities;
             }
             catch (Exception e)
             {
@@ -93,17 +103,17 @@ namespace QuickBooks.Models.EntityService
             }
         }
 
-        public void Save(IList<T> entities, BaseEntity baseEntity)
+        public virtual void Save(IList<T> entities)
         {
             try
             {
                 foreach (var entity in entities)
                 {
                     var lineItems = new List<LineItem>();
-                    if (entity.Id != null) baseEntity.Id = entity.Id;
-                    if (entity.DocNumber != null) baseEntity.DocNumber = entity.DocNumber;
-                    baseEntity.TxnDate = entity.TxnDate;
-                    if (entity.BillAddr.Line1 != null) baseEntity.NameAndId = entity.BillAddr.Line1;
+                    if (entity.Id != null) _baseEntity.Id = entity.Id;
+                    if (entity.DocNumber != null) _baseEntity.DocNumber = entity.DocNumber;
+                    _baseEntity.TxnDate = entity.TxnDate;
+                    if (entity.BillAddr.Line1 != null) _baseEntity.NameAndId = entity.BillAddr.Line1;
                     var address = new StringBuilder();
                     if (entity.ShipAddr != null)
                     {
@@ -113,11 +123,11 @@ namespace QuickBooks.Models.EntityService
                             address.Append(" " + entity.ShipAddr.CountrySubDivisionCode);
                         if (entity.ShipAddr.PostalCode != null) address.Append(", " + entity.ShipAddr.PostalCode);
                     }
-                    baseEntity.ShipAddr = address.ToString();
+                    _baseEntity.ShipAddr = address.ToString();
 
                     if (entity.Line == null)
                     {
-                        _service.Save(baseEntity);
+                        _reportservice.Save(_baseEntity);
                         continue;
                     }
 
@@ -132,8 +142,8 @@ namespace QuickBooks.Models.EntityService
                         lineItem.Name = ((SalesItemLineDetail)line.AnyIntuitObject).ItemRef.name;
                         lineItems.Add(lineItem);
                     }
-                    baseEntity.LineItems = lineItems;
-                    _service.Save(baseEntity);
+                    _baseEntity.LineItems = lineItems;
+                    _reportservice.Save(_baseEntity);
                 }
             }
             catch (Exception e)
@@ -141,6 +151,37 @@ namespace QuickBooks.Models.EntityService
                 _log.Error($"Exception occured when you tried to save {_entityName}", e);
                 throw;
             }
+        }
+
+        public void Update(ServiceContext context, NotificationEntity.Entities entity)
+        {
+            var service = new QueryService<T>(context);
+            var entityFromQuickBooks = service.Where(x => x.Id == entity.Id).ToList();
+            if (entity.Operation == "Create")
+            {
+                var recalculatedList = Recalculate(context, entityFromQuickBooks);
+                Save(recalculatedList);
+
+            }
+            else if (entity.Operation == "Update")
+            {
+                var reportEntity = _reportservice.Get(entity.Id);
+                if (!IsEqualLines(entityFromQuickBooks[0].Line, reportEntity.LineItems))
+                {
+                    var recalculatedList = Recalculate(context, entityFromQuickBooks);
+                    Save(recalculatedList);
+                }
+            }
+        }
+
+        private bool IsEqualLines(IList<Line> quickBookslines, IList<LineItem> actuaLines)
+        {
+            if (quickBookslines.Count != actuaLines.Count) return false;
+            for (var i = 0; i < quickBookslines.Count; i++)
+            {
+                if (quickBookslines[i].Amount != actuaLines[i].Amount) return false;
+            }
+            return true;
         }
     }
 }

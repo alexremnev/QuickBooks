@@ -9,11 +9,16 @@ namespace QuickBooks.Models.ReportService
         /// </summary>
         /// <param name="entities">the list of entities.</param>
         void Save(BaseEntity entities);
-
-       /// <summary>
+        /// <summary>
        /// Delete an entiry by id
        /// </summary>
        /// <param name="id">entity id</param>
        void Delete(int id);
+        /// <summary>
+        /// Get entity from database.
+        /// </summary>
+        /// <param name="id">id of entity.</param>
+        /// <returns>founded entity or null.</returns>
+       Report Get(string id);
    }
 }

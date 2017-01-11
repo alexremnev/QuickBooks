@@ -9,16 +9,15 @@ namespace QuickBooks.Models.EntityService
 {
     public class InvoiceService : BaseService<Intuit.Ipp.Data.Invoice>, IInvoiceService
     {
-        public InvoiceService(IReportService service, ITaxRepository repository) : base(service, repository, "Invoice")
+        public InvoiceService(IReportService service, ITaxRepository repository) : base(service, repository, new Invoice(), "Invoice")
         {
         }
 
         public void Save(IList<Intuit.Ipp.Data.Invoice> entities, ReportBasisEnum accountingMethod = ReportBasisEnum.Accrual)
         {
-            var baseEntity = new Invoice();
-            if (accountingMethod == ReportBasisEnum.Accrual) Save(entities, baseEntity);
+            if (accountingMethod == ReportBasisEnum.Accrual) base.Save(entities);
             var paidedInvoices = entities.Where(x => x.LinkedTxn != null && IsPaid(x)).ToList();
-            Save(paidedInvoices, baseEntity);
+            base.Save(paidedInvoices);
         }
 
         private static bool IsPaid(Transaction invoice)

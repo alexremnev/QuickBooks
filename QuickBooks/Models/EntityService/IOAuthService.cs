@@ -1,9 +1,10 @@
-﻿using QuickBooks.Models.DAL;
+﻿using Intuit.Ipp.Core;
+using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Models.EntityService
 {
-   public interface IOAuthService
-   {
+    public interface IOAuthService
+    {
         /// <summary>
         /// Save the realmId, accessToken and accessToken secret in database.
         /// </summary>
@@ -12,7 +13,13 @@ namespace QuickBooks.Models.EntityService
         /// <summary>
         /// Get the entity of OAuth from database.
         /// </summary>
+        /// <param name="realmId">entity realmId</param>
         /// <returns>found OAuth entity or null.</returns>
-       OAuth Get();
-   }
+        OAuth Get(string realmId);
+        /// <summary>
+        /// Get ServiceContext
+        /// </summary>
+        /// <returns>return ServiceContext or null.</returns>
+        ServiceContext GetServiceContext();
+    }
 }
