@@ -13,7 +13,7 @@ namespace QuickBooks.Models.ReportService
        /// Delete an entiry by id
        /// </summary>
        /// <param name="id">entity id</param>
-       void Delete(int id);
+       void Delete(string id);
         /// <summary>
         /// Get entity from database.
         /// </summary>

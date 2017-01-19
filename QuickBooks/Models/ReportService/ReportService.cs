@@ -22,13 +22,13 @@ namespace QuickBooks.Models.ReportService
                 var report = new Report()
                 {
                     Id = entity.Id,
-                    ShipAddr = entity.ShipAddr,
-                    DocNumber = entity.DocNumber,
+                    ShipToAddress = entity.ShipToAddress,
+                    DocumentNumber = entity.DocumentNumber,
                     LineItems = entity.LineItems,
-                    NameAndId = entity.NameAndId,
-                    TxnDate = entity.TxnDate
+                    CustomerName = entity.CustomerName,
+                    SaleDate = entity.SaleDate
                 };
-                _repository.Create(report);
+           _repository.Create(report);
             }
             catch (Exception e)
             {
@@ -41,7 +41,7 @@ namespace QuickBooks.Models.ReportService
         {
             try
             {
-                var report = _repository.Get(Convert.ToInt32(id));
+                var report = _repository.Get(id);
                 return report;
             }
             catch (Exception e)
@@ -51,10 +51,9 @@ namespace QuickBooks.Models.ReportService
             }
         }
 
-        public void Delete(int id)
+        public void Delete(string id)
         {
             _repository.Delete(id);
         }
-
     }
 }

@@ -39,15 +39,15 @@ namespace QuickBooks.Controllers
                 var dataService = new DataService(context);
 
                 var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
-                // _creditMemoService.Save(creditMemos);
+                //                _creditMemoService.Save(creditMemos);
 
                 var preferences = dataService.FindAll(new Preferences()).ToList();
                 var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
                 var invoices = dataService.FindAll(new Invoice()).ToList();
-                 _invoiceService.Save(invoices, accountingMethod);
+                //                _invoiceService.Save(invoices, accountingMethod);
 
                 var salesReceipts = dataService.FindAll(new SalesReceipt()).ToList();
-//                _salesReceiptService.Save(salesReceipts);
+                //                _salesReceiptService.Save(salesReceipts);
                 ViewBag.IsCreated = true;
                 return View("Index");
             }
@@ -67,10 +67,11 @@ namespace QuickBooks.Controllers
                             Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
                 context.IppConfiguration.Message.Response.SerializationFormat =
                     Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-                _invoiceService.Recalculate(context);
-//                _creditMemoService.Recalculate(context);
-//                _salesReceiptService.Recalculate(context);
-//                _estimateSrService.Recalculate(context);
+                var service = new DataService(context);
+                //                _invoiceService.Recalculate(context);
+                //                _creditMemoService.Recalculate(context);
+                                _salesReceiptService.Recalculate(context);
+                //                _estimateSrService.Recalculate(context);
                 ViewBag.IsRecalculated = true;
                 return View("Index");
 

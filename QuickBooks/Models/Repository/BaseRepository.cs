@@ -34,13 +34,13 @@ namespace QuickBooks.Models.Repository
             }
         }
 
-        public T Get(int id)
+        public T Get(string id)
         {
             using (var session = Sessionfactory.OpenSession())
             {
                 try
                 {
-                    if (id <= 0) throw new Exception("Id can not be below 1");
+                    if (string.IsNullOrEmpty(id)) throw new Exception("Id can not be null or empty");
                     return session.Get<T>(id);
                 }
                 catch (Exception e)
@@ -68,9 +68,8 @@ namespace QuickBooks.Models.Repository
             }
         }
 
-
         [Transaction]
-        public void Delete(int id)
+        public void Delete(string id)
         {
             var entity = Get(id);
 

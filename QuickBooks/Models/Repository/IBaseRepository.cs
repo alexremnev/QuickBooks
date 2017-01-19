@@ -12,7 +12,7 @@
         /// </summary>
         /// <param name="id">entity id.</param>
         /// <returns>found entity or null in case there's no entity with passed id found.</returns>
-        T Get(int id);
+        T Get(string id);
         /// <summary>
         /// Update an entity.
         /// </summary>
@@ -22,6 +22,6 @@
         /// Delete an entity.
         /// </summary>
         /// <param name="id">entity id.</param>
-        void Delete(int id);
+        void Delete(string id);
     }
 }

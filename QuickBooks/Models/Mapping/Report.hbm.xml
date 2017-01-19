@@ -5,10 +5,10 @@
 <!--      <generator class="identity"/>-->
 <!--    </id>-->
     <id name="Id" column="Id"/>
-    <property name="DocNumber" column="DocNumber" />
-    <property name="TxnDate" column="TxnDate" />
-    <property name="NameAndId" column="NameAndId"/>
-    <property name="ShipAddr" column="ShipAddr" />
+    <property name="DocumentNumber" column="DocumentNumber" />
+    <property name="SaleDate" column="SaleDate" />
+    <property name="CustomerName" column="CustomerName"/>
+    <property name="ShipToAddress" column="ShipToAddress" />
     <bag name ="LineItems" cascade = "all" lazy="false">
       <key column ="ReportId"/>
       <one-to-many class ="LineItem"/>

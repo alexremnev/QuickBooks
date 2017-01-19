@@ -21,5 +21,11 @@ namespace QuickBooks.Models.EntityService
         /// </summary>
         /// <returns>return ServiceContext or null.</returns>
         ServiceContext GetServiceContext();
+        /// <summary>
+        /// Delete entity.
+        /// </summary>
+        /// <param name="id">entity id.</param>
+        void Delete(string id);
+
     }
 }

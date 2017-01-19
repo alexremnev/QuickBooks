@@ -6,6 +6,7 @@ using System.Net;
 using System.Web.Mvc;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
+using DevDefined.OAuth.Storage.Basic;
 using Newtonsoft.Json;
 using QuickBooks.Models.DAL;
 using QuickBooks.Models.EntityService;
@@ -66,8 +67,7 @@ namespace QuickBooks.Controllers
                     {
                         if (entity.Operation == "Delete")
                         {
-                            var id = Convert.ToInt32(entity.Id);
-                            _reportService.Delete(id);
+                            _reportService.Delete(entity.Id);
                             continue;
                         }
 
@@ -83,15 +83,14 @@ namespace QuickBooks.Controllers
                                 _estimateService.Update(context, entity);
                                 break;
                             case "SalesReceipt":
-                             _salesReceiptService.Update(context, entity);
+                                _salesReceiptService.Update(context, entity);
                                 break;
                         }
                     }
                 }
-
                 return new HttpStatusCodeResult(HttpStatusCode.OK);
             }
-            return View(notifications);
+            return View();
         }
 
         public ActionResult Result()
@@ -154,9 +153,12 @@ namespace QuickBooks.Controllers
         private void GetAccessToken()
         {
             IOAuthSession clientSession = CreateSession();
+            var oauth = _oauthService.Get(ConsumerKey);
+            _requesToken = new RequestToken { ConsumerKey = ConsumerKey, Token = oauth.AccessToken, TokenSecret = oauth.AccessTokenSecret };
             var accessToken = clientSession.ExchangeRequestTokenForAccessToken(_requesToken, _verifier);
             System.Web.HttpContext.Current.Session["accessToken"] = accessToken.Token;
             System.Web.HttpContext.Current.Session["accessTokenSecret"] = accessToken.TokenSecret;
+            _oauthService.Delete(ConsumerKey);
         }
 
         protected void CreateAuthorization()
@@ -169,10 +171,11 @@ namespace QuickBooks.Controllers
             IToken requestToken = session.GetRequestToken();
             System.Web.HttpContext.Current.Session["requestToken"] = requestToken;
             _requesToken = requestToken;
+            var entity = new OAuth() { AccessToken = _requesToken.Token, AccessTokenSecret = _requesToken.TokenSecret, RealmId = ConsumerKey };
+            _oauthService.Save(entity);
             var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(OauthCallbackUrl)}";
             System.Web.HttpContext.Current.Session["oauthLink"] = authUrl;
             Response.Redirect(authUrl);
-
         }
     }
 }

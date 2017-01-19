@@ -6,10 +6,10 @@ namespace QuickBooks.Models.DAL
     public abstract class BaseEntity
     {
         public virtual string Id { get; set; }
-        public virtual string DocNumber { get; set; }
-        public virtual DateTime TxnDate { get; set; }
-        public virtual string NameAndId { get; set; }
-        public virtual string ShipAddr { get; set; }
+        public virtual string DocumentNumber { get; set; }
+        public virtual DateTime SaleDate { get; set; }
+        public virtual string CustomerName { get; set; }
+        public virtual string ShipToAddress { get; set; }
         public virtual IList<LineItem> LineItems { get; set; }
     }
 }

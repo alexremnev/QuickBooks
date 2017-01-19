@@ -15,7 +15,7 @@ namespace QuickBooks.Models.EntityService
 
         public void Save(IList<Intuit.Ipp.Data.Invoice> entities, ReportBasisEnum accountingMethod = ReportBasisEnum.Accrual)
         {
-            if (accountingMethod == ReportBasisEnum.Accrual) base.Save(entities);
+            if (accountingMethod == ReportBasisEnum.Accrual) { base.Save(entities); return; }
             var paidedInvoices = entities.Where(x => x.LinkedTxn != null && IsPaid(x)).ToList();
             base.Save(paidedInvoices);
         }

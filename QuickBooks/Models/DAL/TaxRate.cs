@@ -1,6 +1,4 @@
-﻿using Intuit.Ipp.Data;
-
-namespace QuickBooks.Models.DAL
+﻿namespace QuickBooks.Models.DAL
 {
     public class TaxRate 
     {

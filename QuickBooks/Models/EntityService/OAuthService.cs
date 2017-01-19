@@ -13,21 +13,19 @@ namespace QuickBooks.Models.EntityService
         private readonly string _consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
         private const IntuitServicesType IntuitServicesType = Intuit.Ipp.Core.IntuitServicesType.QBO;
         private readonly string _realmId = ConfigurationManager.AppSettings["realmId"];
-        private readonly IOAuthRepository _baseRepository;
-        public OAuthService(IOAuthRepository baseRepository)
+        private readonly IOAuthRepository _oAuthRepository;
+        public OAuthService(IOAuthRepository oAuthRepository)
         {
-            _baseRepository = baseRepository;
+            _oAuthRepository = oAuthRepository;
         }
         public void Save(OAuth entity)
         {
-            _baseRepository.Create(entity);
+            _oAuthRepository.Create(entity);
         }
-
         public OAuth Get(string realmId)
         {
-            return _baseRepository.Get(realmId);
+            return _oAuthRepository.Get(realmId);
         }
-
         public ServiceContext GetServiceContext()
         {
             var permission = Get(_realmId);
@@ -35,7 +33,11 @@ namespace QuickBooks.Models.EntityService
                 permission.AccessTokenSecret, _consumerKey, _consumerSecret);
             var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
                 oauthValidator);
-            return context;
+           return context;
+        }
+        public void Delete(string id)
+        {
+            _oAuthRepository.Delete(id);
         }
     }
 }
