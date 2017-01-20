@@ -51,6 +51,10 @@ namespace QuickBooks.Models.EntityService
                     SetTaxCode(entity);
                     var countrySubDivisionCode = customers[entity.CustomerRef.name];
                     var percent = GetPercent(countrySubDivisionCode);
+                    context.IppConfiguration.Message.Request.SerializationFormat =
+                           SerializationFormat.Json;
+                    context.IppConfiguration.Message.Response.SerializationFormat =
+                        SerializationFormat.Json;
                     var taxRateRef = GetTxnCodeRefValue(context, percent);
                     entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType { Value = taxRateRef };
                     dataService.Update(entity);
@@ -129,6 +133,7 @@ namespace QuickBooks.Models.EntityService
                 if (!IsEqualLines(entityFromQuickBooks[0].Line, reportEntity.LineItems))
                 {
                     var recalculatedList = Recalculate(context, entityFromQuickBooks);
+                    _reportservice.Delete(entity.Id);
                     Save(recalculatedList);
                 }
             }
@@ -136,9 +141,10 @@ namespace QuickBooks.Models.EntityService
 
         private static bool IsEqualLines(IList<Line> quickBookslines, IList<LineItem> actuaLines)
         {
-            if (quickBookslines.Count != actuaLines.Count) return false;
+            if (quickBookslines.Count - actuaLines.Count != 0) return false;
             for (var i = 0; i < quickBookslines.Count; i++)
             {
+                if (quickBookslines[i].DetailType == LineDetailTypeEnum.SubTotalLineDetail) return false;
                 if (quickBookslines[i].Amount != actuaLines[i].Amount) return false;
             }
             return true;
@@ -196,7 +202,7 @@ namespace QuickBooks.Models.EntityService
                 var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
                 if (lineDetail != null)
                 {
-                    if (lineDetail.TaxCodeRef == null) lineDetail.TaxCodeRef = new ReferenceType() { Value = "TAX" };
+                    if (lineDetail.TaxCodeRef == null) lineDetail.TaxCodeRef = new ReferenceType { Value = "TAX" };
                     lineDetail.TaxCodeRef.Value = "TAX";
                 }
             }

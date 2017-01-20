@@ -47,7 +47,7 @@ namespace QuickBooks.Controllers
         {
             var realmId = ConfigurationManager.AppSettings["realmId"];
             var permission = _oauthService.Get(realmId);
-            if (permission.AccessToken != null) ViewBag.Access = true;
+            if (permission?.AccessToken != null) ViewBag.Access = true;
             string notifications = null;
             object hmacHeaderSignature = null;
             if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
@@ -171,7 +171,7 @@ namespace QuickBooks.Controllers
             IToken requestToken = session.GetRequestToken();
             System.Web.HttpContext.Current.Session["requestToken"] = requestToken;
             _requesToken = requestToken;
-            var entity = new OAuth() { AccessToken = _requesToken.Token, AccessTokenSecret = _requesToken.TokenSecret, RealmId = ConsumerKey };
+            var entity = new OAuth { RealmId = ConsumerKey, AccessToken = _requesToken.Token, AccessTokenSecret = _requesToken.TokenSecret };
             _oauthService.Save(entity);
             var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(OauthCallbackUrl)}";
             System.Web.HttpContext.Current.Session["oauthLink"] = authUrl;

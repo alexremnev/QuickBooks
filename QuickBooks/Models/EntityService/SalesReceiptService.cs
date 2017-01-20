@@ -7,48 +7,48 @@ using Intuit.Ipp.LinqExtender;
 using Intuit.Ipp.QueryFilter;
 using QuickBooks.Models.ReportService;
 using QuickBooks.Models.Repository;
-using SalesReceipt = QuickBooks.Models.DAL.SalesReceipt;
 
 namespace QuickBooks.Models.EntityService
 {
-    public class SalesReceiptService : BaseService<Intuit.Ipp.Data.SalesReceipt>, ISalesReceiptService
+    public class SalesReceiptService : BaseService<SalesReceipt>, ISalesReceiptService
     {
-        public SalesReceiptService(IReportService service, ITaxRepository repository) : base(service, repository, new SalesReceipt(), "Sales Receipt")
+        public SalesReceiptService(IReportService service, ITaxRepository repository) : base(service, repository, new DAL.SalesReceipt(), "Sales Receipt")
         {
         }
 
-        public override IList<Intuit.Ipp.Data.SalesReceipt> Recalculate(ServiceContext context,
-            IList<Intuit.Ipp.Data.SalesReceipt> recalculateEntity = null)
+        public override IList<SalesReceipt> Recalculate(ServiceContext context,
+            IList<SalesReceipt> recalculateEntity = null)
         {
             DeleteDepositedSalesReceipts(context, recalculateEntity);
             return base.Recalculate(context, recalculateEntity);
         }
 
-        private static void DeleteDepositedSalesReceipts(ServiceContext context, IList<Intuit.Ipp.Data.SalesReceipt> recalculateEntity = null)
+        private static void DeleteDepositedSalesReceipts(ServiceContext context, IList<SalesReceipt> recalculateEntity)
         {
-            var queryService = new QueryService<Intuit.Ipp.Data.SalesReceipt>(context);
+            var queryService = new QueryService<SalesReceipt>(context);
             var entities = recalculateEntity ?? queryService.Select(x => x).ToList();
             var dataService = new DataService(context);
             var deposits = dataService.FindAll(new Deposit());
-
-            var cancelationToken = false;
             foreach (var salesReceipt in entities)
             {
-                foreach (var deposit in deposits)
-                {
-                    if (cancelationToken) break;
-                    if (deposit.Line == null) continue;
-                    foreach (var line in deposit.Line)
-                    {
-                        if (cancelationToken) break;
-                        if (line.LinkedTxn?.Any(linkedTxn => linkedTxn.TxnId == salesReceipt.Id) != true) continue;
-                        dataService.Delete(deposit);
-                        cancelationToken = true;
-                    }
-                }
+                var deposit = FindDeposit(deposits, salesReceipt);
+                if (deposit != null) dataService.Delete(deposit);
             }
         }
-
-
+        /// <summary>
+        /// Find deposit corresponding sales receipt or return null.
+        /// </summary>
+        /// <param name="deposits">collection of deposit.</param>
+        /// <param name="salesReceipt">entity Sales Receipt.</param>
+        /// <returns>found Deposit or null.</returns>
+        private static Deposit FindDeposit(IEnumerable<Deposit> deposits, IntuitEntity salesReceipt)
+        {
+            return deposits.Where(deposit => deposit.Line != null)
+                .SelectMany(deposit => deposit.Line, (deposit, line) => new {deposit, line})
+                .Where(t => t.line.LinkedTxn != null)
+                .Select(t => new {t, any = t.line.LinkedTxn.Any(linkedTxn => linkedTxn.TxnId == salesReceipt.Id)})
+                .Where(t => t.any)
+                .Select(t => t.t.deposit).FirstOrDefault();
+        }
     }
 }
