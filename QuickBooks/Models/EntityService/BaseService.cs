@@ -7,6 +7,7 @@ using Intuit.Ipp.Core;
 using Intuit.Ipp.Core.Configuration;
 using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
+using Intuit.Ipp.Exception;
 using Intuit.Ipp.GlobalTaxService;
 using Intuit.Ipp.LinqExtender;
 using Intuit.Ipp.QueryFilter;
@@ -19,8 +20,6 @@ namespace QuickBooks.Models.EntityService
 {
     public abstract class BaseService<T> : IBaseService<T> where T : SalesTransaction
     {
-        private readonly ILog _log;
-        private readonly BaseEntity _baseEntity;
         protected BaseService(IReportService service, ITaxRepository taxRepository, BaseEntity baseEntity, string entityName)
         {
             _reportservice = service;
@@ -30,7 +29,8 @@ namespace QuickBooks.Models.EntityService
             _baseEntity = baseEntity;
             _taxRateDictionary = GetCustomersTaxRate();
         }
-
+        private readonly ILog _log;
+        private readonly BaseEntity _baseEntity;
         private readonly IReportService _reportservice;
         private readonly ITaxRepository _taxRepository;
         private readonly string _entityName;
@@ -43,16 +43,14 @@ namespace QuickBooks.Models.EntityService
                 var dataService = new DataService(context);
                 var queryService = new QueryService<T>(context);
                 var entities = recalculateEntity ?? queryService.Select(x => x).ToList();
-                // var entities = queryService.Where(x => x.DocNumber == 1014.ToString()).ToList();
                 var customers = GetCustomers(dataService);
-
                 foreach (var entity in entities)
                 {
                     SetTaxCode(entity);
                     var countrySubDivisionCode = customers[entity.CustomerRef.name];
                     var percent = GetPercent(countrySubDivisionCode);
                     context.IppConfiguration.Message.Request.SerializationFormat =
-                           SerializationFormat.Json;
+                        SerializationFormat.Json;
                     context.IppConfiguration.Message.Response.SerializationFormat =
                         SerializationFormat.Json;
                     var taxRateRef = GetTxnCodeRefValue(context, percent);
@@ -61,9 +59,14 @@ namespace QuickBooks.Models.EntityService
                 }
                 return entities;
             }
+            catch (ValidationException e)
+            {
+                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName}", e);
+                throw;
+            }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when you tried to recalculate sales tax in {_entityName}", e);
+                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName}", e);
                 throw;
             }
         }
@@ -113,29 +116,41 @@ namespace QuickBooks.Models.EntityService
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when you tried to save {_entityName}", e);
+                _log.Error($"Exception occured when application tried to save {_entityName}", e);
                 throw;
             }
         }
 
         public void Update(ServiceContext context, NotificationEntity.Entities entity)
         {
-            var service = new QueryService<T>(context);
-            var entityFromQuickBooks = service.Where(x => x.Id == entity.Id).ToList();
-            if (entity.Operation == "Create")
+            try
             {
-                var recalculatedList = Recalculate(context, entityFromQuickBooks);
-                Save(recalculatedList);
-            }
-            else if (entity.Operation == "Update")
-            {
-                var reportEntity = _reportservice.Get(entity.Id);
-                if (!IsEqualLines(entityFromQuickBooks[0].Line, reportEntity.LineItems))
+                var service = new QueryService<T>(context);
+                var entityFromQuickBooks = service.Where(x => x.Id == entity.Id).ToList();
+                if (entity.Operation != "Create")
                 {
+                    if (entity.Operation != "Update") return;
+                    var reportEntity = _reportservice.Get(entity.Id);
+                    if (reportEntity == null)
+                    {
+                        Recalculate(context, entityFromQuickBooks);
+                        return;
+                    }
+                    if (IsEqualLines(entityFromQuickBooks[0].Line, reportEntity.LineItems)) return;
                     var recalculatedList = Recalculate(context, entityFromQuickBooks);
                     _reportservice.Delete(entity.Id);
                     Save(recalculatedList);
                 }
+                else
+                {
+                    var recalculatedList = Recalculate(context, entityFromQuickBooks);
+                    Save(recalculatedList);
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Error("Exception occured when application tried to update data", e);
+                throw;
             }
         }
 
@@ -150,7 +165,7 @@ namespace QuickBooks.Models.EntityService
             return true;
         }
 
-        private string GetTxnCodeRefValue(ServiceContext context, decimal taxRate)
+        private static string GetTxnCodeRefValue(ServiceContext context, decimal taxRate)
         {
             var taxCodeId = GetTaxRateId(context, taxRate);
             if (taxCodeId != null)
@@ -200,11 +215,9 @@ namespace QuickBooks.Models.EntityService
             foreach (var line in entity.Line)
             {
                 var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
-                if (lineDetail != null)
-                {
-                    if (lineDetail.TaxCodeRef == null) lineDetail.TaxCodeRef = new ReferenceType { Value = "TAX" };
-                    lineDetail.TaxCodeRef.Value = "TAX";
-                }
+                if (lineDetail == null) continue;
+                if (lineDetail.TaxCodeRef == null) lineDetail.TaxCodeRef = new ReferenceType { Value = "TAX" };
+                lineDetail.TaxCodeRef.Value = "TAX";
             }
         }
 

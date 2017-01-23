@@ -1,88 +1,93 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Configuration;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Common.Logging;
 using Newtonsoft.Json;
 using QuickBooks.Models.DAL;
+using QuickBooks.Models.EntityService;
+using QuickBooks.Models.ReportService;
 
 namespace QuickBooks.Models.Utility
 {
-    public class ProcessNotificationData
+    public class ProcessNotificationData : IProcessNotificationData
     {
+        public ProcessNotificationData(IInvoiceService invoiceService, ISalesReceiptService salesReceiptService,
+            IEstimateService estimateService, ICreditMemoService creditMemoService, IReportService reportService)
+        {
+            _invoiceService = invoiceService;
+            _salesReceiptService = salesReceiptService;
+            _estimateService = estimateService;
+            _creditMemoService = creditMemoService;
+            _reportService = reportService;
+        }
+
         private static readonly ILog Log = LogManager.GetLogger<ProcessNotificationData>();
         private static string _payloadLoaded;
-        public static bool Validate(string payload, object hmacHeaderSignature)
+        private readonly IInvoiceService _invoiceService;
+        private readonly ISalesReceiptService _salesReceiptService;
+        private readonly IEstimateService _estimateService;
+        private readonly ICreditMemoService _creditMemoService;
+        private readonly IReportService _reportService;
+        private static readonly string Verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
+
+        public bool Validate(string payload, object hmacHeaderSignature)
         {
-            _payloadLoaded = payload;
-            var verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
-            if (hmacHeaderSignature == null) return false;
             try
             {
-                var keyBytes = Encoding.UTF8.GetBytes(verifier);
+                _payloadLoaded = payload;
+                if (hmacHeaderSignature == null) return false;
+                var keyBytes = Encoding.UTF8.GetBytes(Verifier);
                 var dataBytes = Encoding.UTF8.GetBytes(_payloadLoaded);
                 var hmac = new HMACSHA256(keyBytes);
                 var hmacBytes = hmac.ComputeHash(dataBytes);
                 var createPayloadSignature = Convert.ToBase64String(hmacBytes);
-                if ((string)hmacHeaderSignature != createPayloadSignature) return false;
-//                var thread = new Thread(AddToQueue);
-//                thread.Start();
-//                thread.Join(60000);
-                return true;
+                return (string)hmacHeaderSignature == createPayloadSignature;
             }
             catch (Exception e)
             {
-                Log.Error("Exception occured when you tried to process notifications", e);
+                Log.Error("Exception occured when application tried to process notifications", e);
                 return false;
             }
         }
-        private static void AddToQueue()
+
+        public void Update(string notifications, IOAuthService oAuthService)
         {
-            var webhooksData = JsonConvert.DeserializeObject<NotificationEntity.WebhooksData>(_payloadLoaded);
-            var dataItems = new BlockingCollection<NotificationEntity.WebhooksData>(1);
-
-            Task.Run(() =>
+            try
             {
-                // Add items to blocking collection(queue)
-                dataItems.Add(webhooksData);
-                // Let consumer know we are done.
-                dataItems.CompleteAdding();
-            });
-
-            Task.Run(() =>
-            {
-                while (!dataItems.IsCompleted)
+                var webhooksData = JsonConvert.DeserializeObject<NotificationEntity.WebhooksData>(notifications);
+                var context = oAuthService.GetServiceContext();
+                foreach (var notification in webhooksData.EventNotifications)
                 {
-                    //Create WebhooksData reference
-                    NotificationEntity.WebhooksData webhooksData1 = null;
-                    try
+                    foreach (var entity in notification.DataEvents.Entities)
                     {
-                        //Take our Items from blocking collection(dequeue)
-                        webhooksData1 = dataItems.Take();
-                    }
-                    catch (InvalidOperationException) { }
-
-                    if (webhooksData1 != null)
-                    {
-                        //Start processing queue items
-                        ProcessQueueItem(webhooksData1);
+                        if (entity.Operation == "Delete")
+                        {
+                            _reportService.Delete(entity.Id);
+                            continue;
+                        }
+                        switch (entity.Name)
+                        {
+                            case "Invoice":
+                                _invoiceService.Update(context, entity);
+                                break;
+                            case "CreditMemo":
+                                _creditMemoService.Update(context, entity);
+                                break;
+                            case "Estimate":
+                                _estimateService.Update(context, entity);
+                                break;
+                            case "SalesReceipt":
+                                _salesReceiptService.Update(context, entity);
+                                break;
+                        }
                     }
                 }
-            });
-        }
-
-
-        /// <summary>
-        /// Process each item of queue
-        /// </summary>  
-        private static void ProcessQueueItem(NotificationEntity.WebhooksData queueItem1)
-        {
-            //Get realm from deserialized WebHooksData 
-            foreach (var eventNotifications in queueItem1.EventNotifications)
+            }
+            catch (Exception e)
             {
+                Log.Error("Exception occured when application tried to update data", e);
+                throw;
             }
         }
     }

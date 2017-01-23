@@ -14,15 +14,8 @@ namespace QuickBooks.Controllers
 {
     public class ReportController : Controller
     {
-        private readonly ILog _log = LogManager.GetLogger<ReportController>();
-        private readonly ICreditMemoService _creditMemoService;
-        private readonly IInvoiceService _invoiceService;
-        private readonly ISalesReceiptService _salesReceiptService;
-        private readonly IOAuthService _oauthService;
-        private readonly IEstimateService _estimateSrService;
-
         public ReportController(ICreditMemoService creditMemoService, IInvoiceService invoiceService,
-            ISalesReceiptService salesReceiptService, IOAuthService oauthService, IEstimateService estimateService)
+           ISalesReceiptService salesReceiptService, IOAuthService oauthService, IEstimateService estimateService)
         {
             _creditMemoService = creditMemoService;
             _invoiceService = invoiceService;
@@ -30,24 +23,18 @@ namespace QuickBooks.Controllers
             _oauthService = oauthService;
             _estimateSrService = estimateService;
         }
-
-        public ActionResult Create()
+        private readonly ILog _log = LogManager.GetLogger<ReportController>();
+        private readonly ICreditMemoService _creditMemoService;
+        private readonly IInvoiceService _invoiceService;
+        private readonly ISalesReceiptService _salesReceiptService;
+        private readonly IOAuthService _oauthService;
+        private readonly IEstimateService _estimateSrService;
+        
+        public ActionResult Save()
         {
             try
             {
-                var context = _oauthService.GetServiceContext();
-                var dataService = new DataService(context);
-
-                var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
-                                _creditMemoService.Save(creditMemos);
-
-                var preferences = dataService.FindAll(new Preferences()).ToList();
-                var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
-                var invoices = dataService.FindAll(new Invoice()).ToList();
-                                _invoiceService.Save(invoices, accountingMethod);
-
-                var salesReceipts = dataService.FindAll(new SalesReceipt()).ToList();
-                                _salesReceiptService.Save(salesReceipts);
+                SaveData();
                 ViewBag.IsCreated = true;
                 return View("Index");
             }
@@ -62,19 +49,9 @@ namespace QuickBooks.Controllers
         {
             try
             {
-                var context = _oauthService.GetServiceContext();
-                context.IppConfiguration.Message.Request.SerializationFormat =
-                            Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-                context.IppConfiguration.Message.Response.SerializationFormat =
-                    Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-                //var service = new DataService(context);
-                                _invoiceService.Recalculate(context);
-                                _creditMemoService.Recalculate(context);
-                                _salesReceiptService.Recalculate(context);
-                                _estimateSrService.Recalculate(context);
+                RecalculateDocuments();
                 ViewBag.IsRecalculated = true;
                 return View("Index");
-
             }
             catch (Exception e)
             {
@@ -82,6 +59,32 @@ namespace QuickBooks.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
             }
         }
-    }
 
+        private void SaveData()
+        {
+            var context = _oauthService.GetServiceContext();
+            var dataService = new DataService(context);
+            var creditMemos = dataService.FindAll(new CreditMemo()).ToList();
+            _creditMemoService.Save(creditMemos);
+            var preferences = dataService.FindAll(new Preferences()).ToList();
+            var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
+            var invoices = dataService.FindAll(new Invoice()).ToList();
+            _invoiceService.Save(invoices, accountingMethod);
+            var salesReceipts = dataService.FindAll(new SalesReceipt()).ToList();
+            _salesReceiptService.Save(salesReceipts);
+        }
+
+        private void RecalculateDocuments()
+        {
+            var context = _oauthService.GetServiceContext();
+            context.IppConfiguration.Message.Request.SerializationFormat =
+                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+            context.IppConfiguration.Message.Response.SerializationFormat =
+                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+            _invoiceService.Recalculate(context);
+            _creditMemoService.Recalculate(context);
+            _salesReceiptService.Recalculate(context);
+            _estimateSrService.Recalculate(context);
+        }
+    }
 }

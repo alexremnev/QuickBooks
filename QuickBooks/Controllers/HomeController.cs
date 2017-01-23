@@ -4,10 +4,10 @@ using System.Configuration;
 using System.IO;
 using System.Net;
 using System.Web.Mvc;
+using Common.Logging;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
 using DevDefined.OAuth.Storage.Basic;
-using Newtonsoft.Json;
 using QuickBooks.Models.DAL;
 using QuickBooks.Models.EntityService;
 using QuickBooks.Models.ReportService;
@@ -17,108 +17,81 @@ namespace QuickBooks.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly IOAuthService _oauthService;
-        private readonly IInvoiceService _invoiceService;
-        private readonly ISalesReceiptService _salesReceiptService;
-        private readonly IEstimateService _estimateService;
-        private readonly ICreditMemoService _creditMemoService;
-        private readonly IReportService _reportService;
-
-        public HomeController(IOAuthService oAuthService, IInvoiceService invoiceService, ISalesReceiptService salesReceiptService, IEstimateService estimateService, ICreditMemoService creditMemoService, IReportService reportService)
+        public HomeController(IOAuthService oAuthService, IInvoiceService invoiceService, ISalesReceiptService salesReceiptService, IEstimateService estimateService, ICreditMemoService creditMemoService, IReportService reportService, IProcessNotificationData processNotificationData)
         {
             _oauthService = oAuthService;
-            _invoiceService = invoiceService;
-            _salesReceiptService = salesReceiptService;
-            _estimateService = estimateService;
-            _creditMemoService = creditMemoService;
-            _reportService = reportService;
+            _processNotificationData = processNotificationData;
         }
+
+        private static readonly ILog Log = LogManager.GetLogger<HomeController>();
         private static readonly string RequestTokenUrl = ConfigurationManager.AppSettings["GET_REQUEST_TOKEN"];
         private static readonly string AccessTokenUrl = ConfigurationManager.AppSettings["GET_ACCESS_TOKEN"];
         private static readonly string AuthorizeUrl = ConfigurationManager.AppSettings["AuthorizeUrl"];
         private static readonly string OauthUrl = ConfigurationManager.AppSettings["OauthLink"];
         private static readonly string ConsumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
         private static readonly string ConsumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
-        private static readonly string OauthCallbackUrl = "http://localhost:63793/Home/Result";
+        private static readonly string OauthCallbackUrl = ConfigurationManager.AppSettings["OauthCallbackUrl"];
+        private static readonly string RealmId = ConfigurationManager.AppSettings["realmId"];
         private static string _verifier;
         private static IToken _requesToken;
+        private readonly IOAuthService _oauthService;
+        private readonly IProcessNotificationData _processNotificationData;
 
         public ActionResult Index()
         {
-            var realmId = ConfigurationManager.AppSettings["realmId"];
-            var permission = _oauthService.Get(realmId);
-            if (permission?.AccessToken != null) ViewBag.Access = true;
-            string notifications = null;
-            object hmacHeaderSignature = null;
-            if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
+            try
             {
-                System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
-                notifications = new StreamReader(Request.InputStream).ReadToEnd();
-                hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
-            }
-            var isRequestvalid = ProcessNotificationData.Validate(notifications, hmacHeaderSignature);
-            if (isRequestvalid)
-            {
-                var webhooksData = JsonConvert.DeserializeObject<NotificationEntity.WebhooksData>(notifications);
-                var context = _oauthService.GetServiceContext();
-                foreach (var notification in webhooksData.EventNotifications)
+                var permission = _oauthService.Get(RealmId);
+                if (permission?.AccessToken != null) ViewBag.Access = true;
+                string notifications = null;
+                object hmacHeaderSignature = null;
+                if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
                 {
-                    foreach (var entity in notification.DataEvents.Entities)
-                    {
-                        if (entity.Operation == "Delete")
-                        {
-                            _reportService.Delete(entity.Id);
-                            continue;
-                        }
-
-                        switch (entity.Name)
-                        {
-                            case "Invoice":
-                                _invoiceService.Update(context, entity);
-                                break;
-                            case "CreditMemo":
-                                _creditMemoService.Update(context, entity);
-                                break;
-                            case "Estimate":
-                                _estimateService.Update(context, entity);
-                                break;
-                            case "SalesReceipt":
-                                _salesReceiptService.Update(context, entity);
-                                break;
-                        }
-                    }
+                    System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
+                    notifications = new StreamReader(Request.InputStream).ReadToEnd();
+                    hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
                 }
+                var isRequestvalid = _processNotificationData.Validate(notifications, hmacHeaderSignature);
+                if (!isRequestvalid) return View();
+                _processNotificationData.Update(notifications, _oauthService);
                 return new HttpStatusCodeResult(HttpStatusCode.OK);
             }
-            return View();
+            catch (Exception e)
+            {
+                Log.Error("Exception occured when you tried to recalculate document", e);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
+            }
         }
 
         public ActionResult Result()
         {
-            if (Request.QueryString.Count > 0)
+            try
             {
+                if (Request.QueryString.Count <= 0) return RedirectToAction("Index");
                 var queryKeys = new List<string>(Request.QueryString.AllKeys);
                 if (queryKeys.Contains("connect"))
                 {
                     FireAuth();
                 }
-                if (queryKeys.Contains("oauth_token"))
+                if (!queryKeys.Contains("oauth_token")) return RedirectToAction("Index");
+                ReadToken();
+                var oAuth = new OAuth()
                 {
-                    ReadToken();
-                    var oAuth = new OAuth()
-                    {
-                        AccessToken = System.Web.HttpContext.Current.Session["accessToken"].ToString(),
-                        AccessTokenSecret = System.Web.HttpContext.Current.Session["accessTokenSecret"].ToString(),
-                        RealmId = Convert.ToInt64(System.Web.HttpContext.Current.Session["realm"]).ToString()
-                    };
-                    _oauthService.Save(oAuth);
-                    ViewBag.Access = true;
-                    return View("Close");
-                }
+                    AccessToken = System.Web.HttpContext.Current.Session["accessToken"].ToString(),
+                    AccessTokenSecret = System.Web.HttpContext.Current.Session["accessTokenSecret"].ToString(),
+                    RealmId = Convert.ToInt64(System.Web.HttpContext.Current.Session["realm"]).ToString()
+                };
+                _oauthService.Save(oAuth);
+                ViewBag.Access = true;
+                return View("Close");
             }
-            return RedirectToAction("Index");
-
+            catch (Exception e)
+            {
+                Log.Error("Exception occured when you tried to get access into Quickbooks", e);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
+            }
         }
+
         private void FireAuth()
         {
             System.Web.HttpContext.Current.Session["consumerKey"] = ConsumerKey;
@@ -135,7 +108,8 @@ namespace QuickBooks.Controllers
             System.Web.HttpContext.Current.Session["dataSource"] = Request.QueryString["dataSource"];
             GetAccessToken();
         }
-        protected IOAuthSession CreateSession()
+
+        private static IOAuthSession CreateSession()
         {
             var consumerContext = new OAuthConsumerContext
             {
@@ -143,7 +117,6 @@ namespace QuickBooks.Controllers
                 ConsumerSecret = ConsumerSecret,
                 SignatureMethod = SignatureMethod.HmacSha1
             };
-
             return new OAuthSession(consumerContext,
                                     RequestTokenUrl,
                                     OauthUrl,
@@ -152,7 +125,7 @@ namespace QuickBooks.Controllers
 
         private void GetAccessToken()
         {
-            IOAuthSession clientSession = CreateSession();
+            var clientSession = CreateSession();
             var oauth = _oauthService.Get(ConsumerKey);
             _requesToken = new RequestToken { ConsumerKey = ConsumerKey, Token = oauth.AccessToken, TokenSecret = oauth.AccessTokenSecret };
             var accessToken = clientSession.ExchangeRequestTokenForAccessToken(_requesToken, _verifier);
@@ -166,9 +139,8 @@ namespace QuickBooks.Controllers
             System.Web.HttpContext.Current.Session["consumerKey"] = ConsumerKey;
             System.Web.HttpContext.Current.Session["consumerSecret"] = ConsumerSecret;
             System.Web.HttpContext.Current.Session["oauthLink"] = OauthUrl;
-
-            IOAuthSession session = CreateSession();
-            IToken requestToken = session.GetRequestToken();
+            var session = CreateSession();
+            var requestToken = session.GetRequestToken();
             System.Web.HttpContext.Current.Session["requestToken"] = requestToken;
             _requesToken = requestToken;
             var entity = new OAuth { RealmId = ConsumerKey, AccessToken = _requesToken.Token, AccessTokenSecret = _requesToken.TokenSecret };
