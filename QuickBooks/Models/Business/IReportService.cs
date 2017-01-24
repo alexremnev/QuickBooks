@@ -1,6 +1,6 @@
 ﻿using QuickBooks.Models.DAL;
 
-namespace QuickBooks.Models.ReportService
+namespace QuickBooks.Models.Business
 {
    public interface IReportService
    {

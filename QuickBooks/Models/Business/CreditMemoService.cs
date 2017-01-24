@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using QuickBooks.Models.ReportService;
-using QuickBooks.Models.Repository;
+﻿using QuickBooks.Models.Repository;
 using CreditMemo = QuickBooks.Models.DAL.CreditMemo;
 
-
-namespace QuickBooks.Models.EntityService
+namespace QuickBooks.Models.Business
 {
     public class CreditMemoService : BaseService<Intuit.Ipp.Data.CreditMemo>, ICreditMemoService
     {

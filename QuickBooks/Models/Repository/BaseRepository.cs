@@ -8,15 +8,15 @@ namespace QuickBooks.Models.Repository
 {
     public abstract class BaseRepository<T> : IBaseRepository<T> where T : class
     {
-        protected readonly ILog Log;
-        private readonly string _entityName;
-        public ISessionFactory Sessionfactory { get; set; }
-
         protected BaseRepository(string entityName)
         {
             Log = LogManager.GetLogger(GetType());
             _entityName = entityName;
         }
+        protected readonly ILog Log;
+        private readonly string _entityName;
+        public ISessionFactory Sessionfactory { get; set; }
+        private string _entityId = "";
 
         [Transaction]
         public void Create(T entity)
@@ -29,7 +29,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                Log.Error($"Exception occured when system tried to create an {_entityName}", e);
+                Log.Error($"Exception occured when application tried to create an {_entityName}", e);
                 throw;
             }
         }
@@ -40,13 +40,14 @@ namespace QuickBooks.Models.Repository
             {
                 try
                 {
+                    _entityId = id;
                     if (string.IsNullOrEmpty(id)) throw new Exception("Id can not be null or empty");
                     return session.Get<T>(id);
                 }
                 catch (Exception e)
                 {
                     Log.Error(
-                        $"Exception occured when system tried to get entity by id ={id} from database", e);
+                        $"Exception occured when application tried to get entity with id = {_entityId} from database", e);
                     throw;
                 }
             }
@@ -63,7 +64,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                Log.Error($"Exception occured when system tried to update {_entityName}", e);
+                Log.Error($"Exception occured when application tried to update {_entityName}", e);
                 throw;
             }
         }
@@ -72,9 +73,8 @@ namespace QuickBooks.Models.Repository
         public void Delete(string id)
         {
             var entity = Get(id);
-
             if (entity == null) return;
-
+            _entityId = id;
             using (var session = Sessionfactory.OpenSession())
             {
                 using (var transaction = session.BeginTransaction())
@@ -86,14 +86,14 @@ namespace QuickBooks.Models.Repository
                     }
                     catch (Exception e)
                     {
-                        Log.Error($"Exception occured when system tried to delete the object by id= {id}", e);
+                        Log.Error($"Exception occured when application tried to delete the object with id = {_entityId}", e);
                         try
                         {
                             transaction.Rollback();
                         }
                         catch (HibernateException exception)
                         {
-                            Log.Error("Exception occurred when system tried to roll back transaction", exception);
+                            Log.Error("Exception occurred when application tried to roll back transaction", exception);
                         }
                         throw;
                     }

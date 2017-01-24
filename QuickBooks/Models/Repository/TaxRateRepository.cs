@@ -7,12 +7,11 @@ namespace QuickBooks.Models.Repository
 {
     public class TaxRateRepository : BaseRepository<TaxRate>, ITaxRepository
     {
-        private const string NameEntity = "TaxRate";
-        private readonly ILog _log = LogManager.GetLogger<TaxRateRepository>();
-
         public TaxRateRepository() : base(NameEntity)
         {
         }
+        private const string NameEntity = "TaxRate";
+        private readonly ILog _log = LogManager.GetLogger<TaxRateRepository>();
 
         public TaxRate GetByCountrySubDivisionCode(string state)
         {
@@ -27,7 +26,7 @@ namespace QuickBooks.Models.Repository
                 catch (Exception e)
                 {
                     _log.Error(
-                        "Exception occured when system tried to get the product by name", e);
+                        "Exception occured when application tried to get the product by name", e);
                     throw;
                 }
             }
@@ -46,7 +45,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when you tried to get the list of {NameEntity}s from database", e);
+                _log.Error($"Exception occured when application tried to get the list of {NameEntity}s from database", e);
                 throw;
             }
         }

@@ -2,7 +2,7 @@
 using System.Data;
 using NHibernate.SqlTypes;
 using NHibernate.UserTypes;
-using QuickBooks.Models.EntityService;
+using QuickBooks.Models.Business;
 
 namespace QuickBooks.Models.DAL
 {

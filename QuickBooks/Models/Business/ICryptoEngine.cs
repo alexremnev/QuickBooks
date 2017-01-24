@@ -1,4 +1,4 @@
-﻿namespace QuickBooks.Models.EntityService
+﻿namespace QuickBooks.Models.Business
 {
     public interface ICryptoEngine
     {

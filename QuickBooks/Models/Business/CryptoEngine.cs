@@ -2,7 +2,7 @@
 using System.IO;
 using System.Security.Cryptography;
 
-namespace QuickBooks.Models.EntityService
+namespace QuickBooks.Models.Business
 {
     public class CryptoEngine : ICryptoEngine
     {
@@ -30,12 +30,7 @@ namespace QuickBooks.Models.EntityService
             // Convert the plaintext stream to a string.
             return System.Text.Encoding.Unicode.GetString(ms.ToArray());
         }
-        /// <summary>
-        /// This function truncates the hash
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
+        
         private static byte[] TruncateHash(string key, int length)
         {
             SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();

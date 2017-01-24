@@ -3,17 +3,15 @@ using System.Configuration;
 using System.Security.Cryptography;
 using System.Text;
 using Common.Logging;
+using Intuit.Ipp.WebhooksService;
 using Newtonsoft.Json;
-using QuickBooks.Models.DAL;
-using QuickBooks.Models.EntityService;
-using QuickBooks.Models.ReportService;
 
-namespace QuickBooks.Models.Utility
+namespace QuickBooks.Models.Business
 {
     public class ProcessNotificationData : IProcessNotificationData
     {
         public ProcessNotificationData(IInvoiceService invoiceService, ISalesReceiptService salesReceiptService,
-            IEstimateService estimateService, ICreditMemoService creditMemoService, IReportService reportService)
+           IEstimateService estimateService, ICreditMemoService creditMemoService, IReportService reportService)
         {
             _invoiceService = invoiceService;
             _salesReceiptService = salesReceiptService;
@@ -31,18 +29,18 @@ namespace QuickBooks.Models.Utility
         private readonly IReportService _reportService;
         private static readonly string Verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
 
-        public bool Validate(string payload, object hmacHeaderSignature)
+        public bool VerifyPayload(string intuitHeader, string payload)
         {
             try
             {
                 _payloadLoaded = payload;
-                if (hmacHeaderSignature == null) return false;
+                if (intuitHeader == null) return false;
                 var keyBytes = Encoding.UTF8.GetBytes(Verifier);
                 var dataBytes = Encoding.UTF8.GetBytes(_payloadLoaded);
                 var hmac = new HMACSHA256(keyBytes);
                 var hmacBytes = hmac.ComputeHash(dataBytes);
                 var createPayloadSignature = Convert.ToBase64String(hmacBytes);
-                return (string)hmacHeaderSignature == createPayloadSignature;
+                return intuitHeader == createPayloadSignature;
             }
             catch (Exception e)
             {
@@ -51,15 +49,21 @@ namespace QuickBooks.Models.Utility
             }
         }
 
+        public WebhooksEvent GetWebooksEvents(string payload)
+        {
+            var webhooksData = JsonConvert.DeserializeObject<WebhooksEvent>(payload);
+            return webhooksData;
+        }
+
         public void Update(string notifications, IOAuthService oAuthService)
         {
             try
             {
-                var webhooksData = JsonConvert.DeserializeObject<NotificationEntity.WebhooksData>(notifications);
+                var webhooksData = GetWebooksEvents(notifications);
                 var context = oAuthService.GetServiceContext();
                 foreach (var notification in webhooksData.EventNotifications)
                 {
-                    foreach (var entity in notification.DataEvents.Entities)
+                    foreach (var entity in notification.DataChangeEvent.Entities)
                     {
                         if (entity.Operation == "Delete")
                         {

@@ -8,10 +8,8 @@ using Common.Logging;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
 using DevDefined.OAuth.Storage.Basic;
+using QuickBooks.Models.Business;
 using QuickBooks.Models.DAL;
-using QuickBooks.Models.EntityService;
-using QuickBooks.Models.ReportService;
-using QuickBooks.Models.Utility;
 
 namespace QuickBooks.Controllers
 {
@@ -51,8 +49,8 @@ namespace QuickBooks.Controllers
                     notifications = new StreamReader(Request.InputStream).ReadToEnd();
                     hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
                 }
-                var isRequestvalid = _processNotificationData.Validate(notifications, hmacHeaderSignature);
-                if (!isRequestvalid) return View();
+                var isRequestValid = _processNotificationData.VerifyPayload(hmacHeaderSignature?.ToString(), notifications); 
+                if (!isRequestValid) return View();
                 _processNotificationData.Update(notifications, _oauthService);
                 return new HttpStatusCodeResult(HttpStatusCode.OK);
             }

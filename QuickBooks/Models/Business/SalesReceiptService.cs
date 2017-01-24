@@ -5,10 +5,9 @@ using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
 using Intuit.Ipp.LinqExtender;
 using Intuit.Ipp.QueryFilter;
-using QuickBooks.Models.ReportService;
 using QuickBooks.Models.Repository;
 
-namespace QuickBooks.Models.EntityService
+namespace QuickBooks.Models.Business
 {
     public class SalesReceiptService : BaseService<SalesReceipt>, ISalesReceiptService
     {
@@ -17,10 +16,10 @@ namespace QuickBooks.Models.EntityService
         }
 
         public override IList<SalesReceipt> Recalculate(ServiceContext context,
-            IList<SalesReceipt> recalculateEntity = null)
+            IList<SalesReceipt> notCalculatedEntities = null)
         {
-            DeleteDepositedSalesReceipts(context, recalculateEntity);
-            return base.Recalculate(context, recalculateEntity);
+            DeleteDepositedSalesReceipts(context, notCalculatedEntities);
+            return base.Recalculate(context, notCalculatedEntities);
         }
 
         private static void DeleteDepositedSalesReceipts(ServiceContext context, IList<SalesReceipt> recalculateEntity)

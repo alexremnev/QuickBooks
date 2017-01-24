@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Intuit.Ipp.Data;
 
-namespace QuickBooks.Models.EntityService
+namespace QuickBooks.Models.Business
 {
     public interface ICreditMemoService : IBaseService<CreditMemo>
     {

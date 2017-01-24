@@ -1,7 +1,7 @@
 ﻿using Intuit.Ipp.Core;
 using QuickBooks.Models.DAL;
 
-namespace QuickBooks.Models.EntityService
+namespace QuickBooks.Models.Business
 {
     public interface IOAuthService
     {
@@ -26,6 +26,5 @@ namespace QuickBooks.Models.EntityService
         /// </summary>
         /// <param name="id">entity id.</param>
         void Delete(string id);
-
     }
 }

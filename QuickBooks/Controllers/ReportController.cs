@@ -5,7 +5,7 @@ using System.Web.Mvc;
 using Common.Logging;
 using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
-using QuickBooks.Models.EntityService;
+using QuickBooks.Models.Business;
 using CreditMemo = Intuit.Ipp.Data.CreditMemo;
 using Invoice = Intuit.Ipp.Data.Invoice;
 using SalesReceipt = Intuit.Ipp.Data.SalesReceipt;

@@ -11,12 +11,12 @@ using Intuit.Ipp.Exception;
 using Intuit.Ipp.GlobalTaxService;
 using Intuit.Ipp.LinqExtender;
 using Intuit.Ipp.QueryFilter;
+using Intuit.Ipp.WebhooksService;
 using QuickBooks.Models.DAL;
-using QuickBooks.Models.ReportService;
 using QuickBooks.Models.Repository;
 using TaxRate = Intuit.Ipp.Data.TaxRate;
 
-namespace QuickBooks.Models.EntityService
+namespace QuickBooks.Models.Business
 {
     public abstract class BaseService<T> : IBaseService<T> where T : SalesTransaction
     {
@@ -35,17 +35,19 @@ namespace QuickBooks.Models.EntityService
         private readonly ITaxRepository _taxRepository;
         private readonly string _entityName;
         private readonly IDictionary<string, decimal> _taxRateDictionary;
+        private string _entityId = "";
 
-        public virtual IList<T> Recalculate(ServiceContext context, IList<T> recalculateEntity = null)
+        public virtual IList<T> Recalculate(ServiceContext context, IList<T> notCalculatedEntities = null)
         {
             try
             {
                 var dataService = new DataService(context);
                 var queryService = new QueryService<T>(context);
-                var entities = recalculateEntity ?? queryService.Select(x => x).ToList();
+                var entities = notCalculatedEntities ?? queryService.Select(x => x).ToList();
                 var customers = GetCustomers(dataService);
                 foreach (var entity in entities)
                 {
+                    _entityId = entity.Id;
                     SetTaxCode(entity);
                     var countrySubDivisionCode = customers[entity.CustomerRef.name];
                     var percent = GetPercent(countrySubDivisionCode);
@@ -61,12 +63,12 @@ namespace QuickBooks.Models.EntityService
             }
             catch (ValidationException e)
             {
-                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName}", e);
+                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName} with id = {_entityId}", e);
                 throw;
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName}", e);
+                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName} with id = {_entityId}", e);
                 throw;
             }
         }
@@ -79,6 +81,7 @@ namespace QuickBooks.Models.EntityService
                 {
                     var lineItems = new List<LineItem>();
                     _baseEntity.Id = entity.Id;
+                    _entityId = entity.Id;
                     _baseEntity.DocumentNumber = entity.DocNumber;
                     _baseEntity.SaleDate = entity.TxnDate;
                     if (entity.BillAddr.Line1 != null) _baseEntity.CustomerName = entity.CustomerRef.name;
@@ -92,13 +95,11 @@ namespace QuickBooks.Models.EntityService
                         if (entity.ShipAddr.PostalCode != null) address.Append(", " + entity.ShipAddr.PostalCode);
                     }
                     _baseEntity.ShipToAddress = address.ToString();
-
                     if (entity.Line == null)
                     {
                         _reportservice.Save(_baseEntity);
                         continue;
                     }
-
                     foreach (var line in entity.Line)
                     {
                         var lineItem = new LineItem();
@@ -116,17 +117,18 @@ namespace QuickBooks.Models.EntityService
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when application tried to save {_entityName}", e);
+                _log.Error($"Exception occured when application tried to save {_entityName} with id = {_entityId}", e);
                 throw;
             }
         }
 
-        public void Update(ServiceContext context, NotificationEntity.Entities entity)
+        public void Update(ServiceContext context, Entity entity)
         {
             try
             {
                 var service = new QueryService<T>(context);
                 var entityFromQuickBooks = service.Where(x => x.Id == entity.Id).ToList();
+                _entityId = entity.Id;
                 if (entity.Operation != "Create")
                 {
                     if (entity.Operation != "Update") return;
@@ -149,7 +151,7 @@ namespace QuickBooks.Models.EntityService
             }
             catch (Exception e)
             {
-                _log.Error("Exception occured when application tried to update data", e);
+                _log.Error($"Exception occured when application tried to update data with id = {_entityId}", e);
                 throw;
             }
         }
@@ -189,10 +191,10 @@ namespace QuickBooks.Models.EntityService
             return taxService.TaxRateDetails[0].TaxRateId;
         }
 
-        private static IDictionary<string, string> GetCustomers(DataService dataService)
+        private static IDictionary<string, string> GetCustomers(IDataService dataService)
         {
             var customerDictionary = new Dictionary<string, string>();
-            var customers = dataService.FindAll(new Customer()).ToList();
+            var customers = dataService.FindAll(new Customer(), 1, 1000).ToList();
             foreach (var customer in customers)
             {
                 if (customer.FullyQualifiedName.Contains(":"))
@@ -247,10 +249,15 @@ namespace QuickBooks.Models.EntityService
             return id;
         }
 
-        private static TaxService AddTaxService(ServiceContext context, decimal percent)
+        public static TaxService AddTaxService(ServiceContext context, decimal percent)
         {
             var queryService = new QueryService<TaxAgency>(context);
-            var taxAgency = queryService.ExecuteIdsQuery("select * from TaxAgency").First();
+            var taxAgency = queryService.Where(x => x != null).FirstOrDefault();
+            if (taxAgency == null)
+            {
+                var dataService = new DataService(context);
+                taxAgency = dataService.Add(new TaxAgency { DisplayName = "New Tax Agency" });
+            }
             var name = $"{percent} percent tax";
             var taxRateDetailses = new[] { new TaxRateDetails { RateValue = percent, RateValueSpecified = true, TaxAgencyId = taxAgency.Id, TaxApplicableOn = TaxRateApplicableOnEnum.Sales, TaxRateName = name } };
             var taxService = new TaxService { TaxCode = name, TaxRateDetails = taxRateDetailses };
