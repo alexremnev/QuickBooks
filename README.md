@@ -9,8 +9,8 @@
 <li>Click on the buttons in the following order:
 <ul>
 1. Connect your app to Quickbooks, by clicking on Connect to QuickBooks button and follow the instructions on the screen.<br>
-2. Recalculate button.<br>
-3. Save button.
+2. Recalculate sales tax button.<br>
+3. Save report button.
 </ul></li>
 </ul>
 
