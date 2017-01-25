@@ -36,6 +36,7 @@ namespace QuickBooks.Models.Business
         private readonly string _entityName;
         private readonly IDictionary<string, decimal> _taxRateDictionary;
         private string _entityId = "";
+        private static bool _isAddTaxService;
 
         public virtual IList<T> Recalculate(ServiceContext context, IList<T> notCalculatedEntities = null)
         {
@@ -44,6 +45,7 @@ namespace QuickBooks.Models.Business
                 var dataService = new DataService(context);
                 var queryService = new QueryService<T>(context);
                 var entities = notCalculatedEntities ?? queryService.Select(x => x).ToList();
+                if (entities.Count == 0) return null;
                 var customers = GetCustomers(dataService);
                 foreach (var entity in entities)
                 {
@@ -51,13 +53,13 @@ namespace QuickBooks.Models.Business
                     SetTaxCode(entity);
                     var countrySubDivisionCode = customers[entity.CustomerRef.name];
                     var percent = GetPercent(countrySubDivisionCode);
-                    context.IppConfiguration.Message.Request.SerializationFormat =
-                        SerializationFormat.Json;
-                    context.IppConfiguration.Message.Response.SerializationFormat =
-                        SerializationFormat.Json;
                     var taxRateRef = GetTxnCodeRefValue(context, percent);
                     entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType { Value = taxRateRef };
+                    if (entity.TxnTaxDetail.TotalTax == 0) RecalculateTaxManually(entity, percent);
                     dataService.Update(entity);
+                    if (!_isAddTaxService) continue;
+                    dataService.Update(entity);
+                    _isAddTaxService = false;
                 }
                 return entities;
             }
@@ -68,6 +70,8 @@ namespace QuickBooks.Models.Business
             }
             catch (Exception e)
             {
+                if (e.Message.Contains("An error occured while executing the query."))
+                    _log.Error("In Quickbooks Online something went wrong. It can't execute a simple query!!!");
                 _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName} with id = {_entityId}", e);
                 throw;
             }
@@ -214,13 +218,16 @@ namespace QuickBooks.Models.Business
 
         private static void SetTaxCode(T entity)
         {
+            var isNeedToAddLine = true;
             foreach (var line in entity.Line)
             {
                 var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
                 if (lineDetail == null) continue;
+                if (isNeedToAddLine) isNeedToAddLine = false;
                 if (lineDetail.TaxCodeRef == null) lineDetail.TaxCodeRef = new ReferenceType { Value = "TAX" };
                 lineDetail.TaxCodeRef.Value = "TAX";
             }
+            if (isNeedToAddLine) AddLine(entity);
         }
 
         private decimal GetPercent(string countrySubDivisionCode)
@@ -244,9 +251,9 @@ namespace QuickBooks.Models.Business
 
         private static string GetTaxRateId(ServiceContext context, decimal taxRate)
         {
-            var taxValues = new QueryService<TaxRate>(context);
-            var id = taxValues.Where(x => x.RateValue == taxRate && x.Active).Select(x => x.Id).FirstOrDefault();
-            return id;
+            var queryService = new QueryService<TaxRate>(context);
+            var taxRateId = queryService.Where(x => x.RateValue == taxRate && x.Active).Select(x => x.Id).FirstOrDefault();
+            return taxRateId;
         }
 
         public static TaxService AddTaxService(ServiceContext context, decimal percent)
@@ -265,7 +272,41 @@ namespace QuickBooks.Models.Business
             context.IppConfiguration.Message.Response.SerializationFormat = SerializationFormat.Json;
             var globalTaxService = new GlobalTaxService(context);
             globalTaxService.AddTaxCode(taxService);
+            _isAddTaxService = true;
             return taxService;
+        }
+
+        private static void RecalculateTaxManually(Transaction entity, decimal percent)
+        {
+            decimal totalTax = 0;
+            foreach (var line in entity.Line)
+            {
+                var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
+                if (lineDetail == null) continue;
+                totalTax += line.Amount * percent / 100;
+            }
+            entity.TxnTaxDetail.TotalTax = totalTax;
+        }
+
+        private static void AddLine(Transaction entity)
+        {
+            foreach (var line in entity.Line)
+            {
+                var subTotalLineItem = line.AnyIntuitObject as SubTotalLineDetail;
+                if (subTotalLineItem == null) continue;
+                var newLine = new Line
+                {
+                    Amount = line.Amount,
+                    AmountSpecified = true,
+                    DetailTypeSpecified = true,
+                    DetailType = LineDetailTypeEnum.SalesItemLineDetail,
+                    LineNum = 1.ToString(),
+                    AnyIntuitObject = new SalesItemLineDetail { ItemRef = new ReferenceType { Value = 1.ToString() }, TaxCodeRef = new ReferenceType { Value = "Tax" } }
+                };
+                var newLines = new[] { newLine, line };
+                entity.Line = newLines;
+                return;
+            }
         }
     }
 }

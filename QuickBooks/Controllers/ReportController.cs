@@ -29,7 +29,7 @@ namespace QuickBooks.Controllers
         private readonly ISalesReceiptService _salesReceiptService;
         private readonly IOAuthService _oauthService;
         private readonly IEstimateService _estimateSrService;
-        
+
         public ActionResult Save()
         {
             try

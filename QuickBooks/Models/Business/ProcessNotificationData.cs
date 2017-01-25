@@ -19,7 +19,6 @@ namespace QuickBooks.Models.Business
             _creditMemoService = creditMemoService;
             _reportService = reportService;
         }
-
         private static readonly ILog Log = LogManager.GetLogger<ProcessNotificationData>();
         private static string _payloadLoaded;
         private readonly IInvoiceService _invoiceService;
