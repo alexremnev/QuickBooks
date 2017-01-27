@@ -16,10 +16,10 @@ namespace QuickBooks.Models.Business
         }
 
         public override IList<SalesReceipt> Recalculate(ServiceContext context,
-            IList<SalesReceipt> notCalculatedEntities = null)
+            IList<SalesReceipt> list = null)
         {
-            DeleteDepositedSalesReceipts(context, notCalculatedEntities);
-            return base.Recalculate(context, notCalculatedEntities);
+            DeleteDepositedSalesReceipts(context, list);
+            return base.Recalculate(context, list);
         }
 
         private static void DeleteDepositedSalesReceipts(ServiceContext context, IList<SalesReceipt> recalculateEntity)

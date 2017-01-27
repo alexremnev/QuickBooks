@@ -6,6 +6,7 @@ using Common.Logging;
 using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
 using QuickBooks.Models.Business;
+using QuickBooks.QBCustomization;
 using CreditMemo = Intuit.Ipp.Data.CreditMemo;
 using Invoice = Intuit.Ipp.Data.Invoice;
 using SalesReceipt = Intuit.Ipp.Data.SalesReceipt;
@@ -76,11 +77,12 @@ namespace QuickBooks.Controllers
 
         private void RecalculateDocuments()
         {
-            var context = _oauthService.GetServiceContext();
-            context.IppConfiguration.Message.Request.SerializationFormat =
-                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-            context.IppConfiguration.Message.Response.SerializationFormat =
-                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+            var context = QbCustomization.ApplyJsonSerilizationFormat(_oauthService.GetServiceContext());
+            //            context.IppConfiguration.Message.Request.SerializationFormat =
+            //                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+            //            context.IppConfiguration.Message.Response.SerializationFormat =
+            //                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+           // QbCustomization.ApplyJsonSerilizationFormat(context);
             _invoiceService.Recalculate(context);
             _creditMemoService.Recalculate(context);
             _salesReceiptService.Recalculate(context);

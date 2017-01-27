@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Web.Mvc;
 using Common.Logging;
@@ -51,34 +51,26 @@ namespace QuickBooks.Controllers
                 if (!isRequestValid) return View();
                 _processNotificationData.Update(notifications, _oauthService);
                 return new HttpStatusCodeResult(HttpStatusCode.OK);
+                //return View();
             }
             catch (Exception e)
             {
-                Log.Error("Exception occured when you tried to recalculate document", e);
+                Log.Error("Exception occured when application tried to get permissions", e);
                 return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
             }
         }
 
-        public ActionResult Result()
+        public ActionResult Oauth()
         {
             try
             {
                 if (Request.QueryString.Count <= 0) return RedirectToAction("Index");
-                var queryKeys = new List<string>(Request.QueryString.AllKeys);
-                if (queryKeys.Contains("connect"))
+                if (Request.QueryString.AllKeys.Contains("connect"))
                 {
                     FireAuth();
                 }
-                if (!queryKeys.Contains("oauth_token")) return RedirectToAction("Index");
-                ReadToken();
-                var oAuth = new OAuth()
-                {
-                    AccessToken = System.Web.HttpContext.Current.Session["accessToken"].ToString(),
-                    AccessTokenSecret = System.Web.HttpContext.Current.Session["accessTokenSecret"].ToString(),
-                    RealmId = Convert.ToInt64(System.Web.HttpContext.Current.Session["realm"]).ToString()
-                };
-                _oauthService.Delete(oAuth.RealmId);
-                _oauthService.Save(oAuth);
+                if (!Request.QueryString.AllKeys.Contains("oauth_token")) return RedirectToAction("Index");
+                GetAndSaveAccessToken(Request.QueryString["oauth_verifier"]);
                 ViewBag.Access = true;
                 return View("Close");
             }
@@ -87,16 +79,6 @@ namespace QuickBooks.Controllers
                 Log.Error("Exception occured when you tried to get access into Quickbooks", e);
                 return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
             }
-        }
-
-        private void ReadToken()
-        {
-            System.Web.HttpContext.Current.Session["oauthToken"] = Request.QueryString["oauth_token"];
-            System.Web.HttpContext.Current.Session["oauthVerifyer"] = Request.QueryString["oauth_verifier"];
-            var verifier = Request.QueryString["oauth_verifier"];
-            System.Web.HttpContext.Current.Session["realm"] = Request.QueryString["realmId"];
-            System.Web.HttpContext.Current.Session["dataSource"] = Request.QueryString["dataSource"];
-            GetAccessToken(verifier);
         }
 
         private static IOAuthSession CreateSession()
@@ -110,30 +92,65 @@ namespace QuickBooks.Controllers
             return new OAuthSession(consumerContext, RequestTokenUrl, OauthUrl, AccessTokenUrl);
         }
 
-        private void GetAccessToken(string verifier)
+        private void GetAndSaveAccessToken(string verifier)
         {
             var clientSession = CreateSession();
-            var oauth = _oauthService.Get(ConsumerKey);
-            var requesToken = new RequestToken { ConsumerKey = ConsumerKey, Token = oauth.AccessToken, TokenSecret = oauth.AccessTokenSecret };
-            var accessToken = clientSession.ExchangeRequestTokenForAccessToken(requesToken, verifier);
-            System.Web.HttpContext.Current.Session["accessToken"] = accessToken.Token;
-            System.Web.HttpContext.Current.Session["accessTokenSecret"] = accessToken.TokenSecret;
-            _oauthService.Delete(ConsumerKey);
+            var oauthToken = Request.QueryString["oauth_token"];
+            var oauth = _oauthService.Get(oauthToken);
+            if (oauth != null)
+            {
+                var requesToken = new RequestToken
+                {
+                    ConsumerKey = ConsumerKey,
+                    Token = oauth.AccessToken,
+                    TokenSecret = oauth.AccessTokenSecret
+                };
+                var accessToken = clientSession.ExchangeRequestTokenForAccessToken(requesToken, verifier);
+                var oAuth = new OAuth
+                {
+                    AccessToken = accessToken.Token,
+                    AccessTokenSecret = accessToken.TokenSecret,
+                    RealmId = Request.QueryString["realmId"]
+                };
+                _oauthService.Delete(oauthToken);
+                _oauthService.Save(oAuth);
+            }
+            RedirectToAction("Index");
         }
 
         private void FireAuth()
         {
-            System.Web.HttpContext.Current.Session["consumerKey"] = ConsumerKey;
-            System.Web.HttpContext.Current.Session["consumerSecret"] = ConsumerSecret;
-            System.Web.HttpContext.Current.Session["oauthLink"] = OauthUrl;
             var session = CreateSession();
             var requestToken = session.GetRequestToken();
-            System.Web.HttpContext.Current.Session["requestToken"] = requestToken;
-            var entity = new OAuth { RealmId = ConsumerKey, AccessToken = requestToken.Token, AccessTokenSecret = requestToken.TokenSecret };
+            var entity = new OAuth { RealmId = requestToken.Token, AccessToken = requestToken.Token, AccessTokenSecret = requestToken.TokenSecret };
             _oauthService.Save(entity);
             var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(OauthCallbackUrl)}";
-            System.Web.HttpContext.Current.Session["oauthLink"] = authUrl;
             Response.Redirect(authUrl);
         }
+
+//        public ActionResult Notification()
+//        {
+//            try
+//            {
+//                string notifications = null;
+//                object hmacHeaderSignature = null;
+//                if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
+//                {
+//                    System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
+//                    notifications = new StreamReader(Request.InputStream).ReadToEnd();
+//                    hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
+//                }
+//                var isRequestValid = _processNotificationData.VerifyPayload(hmacHeaderSignature?.ToString(),
+//                    notifications);
+//                if (!isRequestValid) return View("Index");
+//                _processNotificationData.Update(notifications, _oauthService);
+//                return new HttpStatusCodeResult(HttpStatusCode.OK);
+//            }
+//            catch (Exception e)
+//            {
+//                Log.Error("Exception occured when application tried to handle incoming notifications", e);
+//                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
+//            }
+//        }
     }
 }

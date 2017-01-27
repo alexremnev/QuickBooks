@@ -11,9 +11,9 @@ namespace QuickBooks.Models.Business
         /// Recalculate sales tax.
         /// </summary>
         /// <param name="context">the entity of Intuit.Ipp.Core.ServiceContext.</param>
-        /// <param name="notCalculatedEntities">entity which must be recalculated.</param>
+        /// <param name="list">entity which must be recalculated.</param>
         /// <returns>recalculated list of entities.</returns>
-        IList<T> Recalculate(ServiceContext context, IList<T> notCalculatedEntities = null);
+        IList<T> Recalculate(ServiceContext context, IList<T> list = null);
         /// <summary>
         /// Update data.
         /// </summary>
