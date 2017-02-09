@@ -1,29 +1,29 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Intuit.Ipp.Core;
 using Intuit.Ipp.Data;
 using Intuit.Ipp.DataService;
 using Intuit.Ipp.LinqExtender;
 using Intuit.Ipp.QueryFilter;
 using QuickBooks.Models.Repository;
+using QuickBooks.QBCustomization;
 
 namespace QuickBooks.Models.Business
 {
     public class SalesReceiptService : BaseService<SalesReceipt>, ISalesReceiptService
     {
-        public SalesReceiptService(IReportService service, ITaxRepository repository) : base(service, repository, new DAL.SalesReceipt(), "Sales Receipt")
+        public SalesReceiptService(IReportRepository reportRepository, ITaxRepository repository, IOAuthService oAuthService) : base(reportRepository, repository, oAuthService, "Sales Receipt")
         {
         }
 
-        public override IList<SalesReceipt> Recalculate(ServiceContext context,
-            IList<SalesReceipt> list = null)
+        public override IList<SalesReceipt> Recalculate(IList<SalesReceipt> list = null)
         {
-            DeleteDepositedSalesReceipts(context, list);
-            return base.Recalculate(context, list);
+            DeleteDepositedSalesReceipts(list);
+            return base.Recalculate(list);
         }
 
-        private static void DeleteDepositedSalesReceipts(ServiceContext context, IList<SalesReceipt> recalculateEntity)
+        private void DeleteDepositedSalesReceipts(IList<SalesReceipt> recalculateEntity)
         {
+            var context = QbCustomization.ApplyJsonSerilizationFormat(_oAuthService.GetServiceContext());
             var queryService = new QueryService<SalesReceipt>(context);
             var entities = recalculateEntity ?? queryService.Select(x => x).ToList();
             var dataService = new DataService(context);

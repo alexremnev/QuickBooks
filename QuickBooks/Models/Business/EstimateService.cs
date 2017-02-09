@@ -1,16 +1,16 @@
 ﻿using System.Collections.Generic;
-using QuickBooks.Models.DAL;
+using Intuit.Ipp.Data;
 using QuickBooks.Models.Repository;
 
 namespace QuickBooks.Models.Business
 {
-    public class EstimateService : BaseService<Intuit.Ipp.Data.Estimate>, IEstimateService
+    public class EstimateService : BaseService<Estimate>, IEstimateService
     {
-        public EstimateService(IReportService service, ITaxRepository repository) : base(service, repository, new Estimate(), "Estimate")
+        public EstimateService(IReportRepository reportRepository, ITaxRepository repository, IOAuthService oAuthService) : base(reportRepository, repository, oAuthService, "Estimate")
         {
         }
 
-        public override void Save(IList<Intuit.Ipp.Data.Estimate> entities)
+        public override void Save(IList<Estimate> entities)
         {
         }
     }

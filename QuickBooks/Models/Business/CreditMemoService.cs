@@ -1,11 +1,11 @@
-﻿using QuickBooks.Models.Repository;
-using CreditMemo = QuickBooks.Models.DAL.CreditMemo;
+﻿using Intuit.Ipp.Data;
+using QuickBooks.Models.Repository;
 
 namespace QuickBooks.Models.Business
 {
-    public class CreditMemoService : BaseService<Intuit.Ipp.Data.CreditMemo>, ICreditMemoService
+    public class CreditMemoService : BaseService<CreditMemo>, ICreditMemoService
     {
-        public CreditMemoService(IReportService service, ITaxRepository repository) : base(service, repository, new CreditMemo(), "Credit Memo")
+        public CreditMemoService(IReportRepository reportRepository, ITaxRepository repository, IOAuthService oAuthService) : base(reportRepository, repository, oAuthService, "Credit Memo")
         {
         }
     }

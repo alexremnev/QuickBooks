@@ -6,7 +6,7 @@
         /// Save entity in database.
         /// </summary>
         /// <param name="entity">the entity which must be saved in database. if entity is null occurs ArgumentNullException.</param>
-        void Create(T entity);
+        void Save(T entity);
         /// <summary>
         /// Get entity by id.
         /// </summary>

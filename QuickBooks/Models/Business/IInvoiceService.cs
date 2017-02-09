@@ -8,8 +8,7 @@ namespace QuickBooks.Models.Business
         /// <summary>
         /// Save the list of Invoice in database.
         /// </summary>
-        /// <param name="entities">the list of invoice.</param>
-        ///  <param name="accountingMethod">Enumeration of Tax Report Basis.</param>
-        void Save(IList<Invoice> entities, ReportBasisEnum accountingMethod = ReportBasisEnum.Accrual);
+        /// <param name="list">the list of invoice.</param>
+        void Save(IList<Invoice> list = null);
     }
 }

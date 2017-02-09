@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace QuickBooks.Models.DAL
 {
-    public abstract class BaseEntity
+    public class BaseEntity
     {
         public virtual string Id { get; set; }
         public virtual string DocumentNumber { get; set; }

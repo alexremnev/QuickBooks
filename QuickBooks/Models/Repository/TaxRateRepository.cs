@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Common.Logging;
 using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Models.Repository
@@ -11,8 +10,7 @@ namespace QuickBooks.Models.Repository
         {
         }
         private const string NameEntity = "TaxRate";
-        private readonly ILog _log = LogManager.GetLogger<TaxRateRepository>();
-
+     
         public TaxRate GetByCountrySubDivisionCode(string state)
         {
             TaxRate taxRate;
@@ -25,7 +23,7 @@ namespace QuickBooks.Models.Repository
                 }
                 catch (Exception e)
                 {
-                    _log.Error(
+                    Log.Error(
                         "Exception occured when application tried to get the product by name", e);
                     throw;
                 }
@@ -45,7 +43,7 @@ namespace QuickBooks.Models.Repository
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when application tried to get the list of {NameEntity}s from database", e);
+                Log.Error($"Exception occured when application tried to get the list of {NameEntity}s from database", e);
                 throw;
             }
         }

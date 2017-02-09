@@ -8,25 +8,24 @@ using Newtonsoft.Json;
 
 namespace QuickBooks.Models.Business
 {
-    public class ProcessNotificationData : IProcessNotificationData
+    public class NotificationService : INotificationService
     {
-        public ProcessNotificationData(IInvoiceService invoiceService, ISalesReceiptService salesReceiptService,
-           IEstimateService estimateService, ICreditMemoService creditMemoService, IReportService reportService)
+        public NotificationService(IInvoiceService invoiceService, ISalesReceiptService salesReceiptService,
+           IEstimateService estimateService, ICreditMemoService creditMemoService)
         {
+           
             _invoiceService = invoiceService;
             _salesReceiptService = salesReceiptService;
             _estimateService = estimateService;
             _creditMemoService = creditMemoService;
-            _reportService = reportService;
         }
-        private static readonly ILog Log = LogManager.GetLogger<ProcessNotificationData>();
+        private static readonly ILog Log = LogManager.GetLogger<NotificationService>();
         private static string _payloadLoaded;
         private readonly IInvoiceService _invoiceService;
         private readonly ISalesReceiptService _salesReceiptService;
         private readonly IEstimateService _estimateService;
         private readonly ICreditMemoService _creditMemoService;
-        private readonly IReportService _reportService;
-        private static readonly string Verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
+       private static readonly string Verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
 
         public bool VerifyPayload(string intuitHeader, string payload)
         {
@@ -54,34 +53,29 @@ namespace QuickBooks.Models.Business
             return webhooksData;
         }
 
-        public void Update(string notifications, IOAuthService oAuthService)
+        public void Process(string notifications)
         {
             try
             {
                 var webhooksData = GetWebooksEvents(notifications);
-                var context = oAuthService.GetServiceContext();
+  
                 foreach (var notification in webhooksData.EventNotifications)
                 {
                     foreach (var entity in notification.DataChangeEvent.Entities)
                     {
-                        if (entity.Operation == "Delete")
-                        {
-                            _reportService.Delete(entity.Id);
-                            continue;
-                        }
                         switch (entity.Name)
                         {
                             case "Invoice":
-                                _invoiceService.Update(context, entity);
+                                _invoiceService.Update(entity);
                                 break;
                             case "CreditMemo":
-                                _creditMemoService.Update(context, entity);
+                                _creditMemoService.Update(entity);
                                 break;
                             case "Estimate":
-                                _estimateService.Update(context, entity);
+                                _estimateService.Update(entity);
                                 break;
                             case "SalesReceipt":
-                                _salesReceiptService.Update(context, entity);
+                                _salesReceiptService.Update(entity);
                                 break;
                         }
                     }

@@ -19,7 +19,7 @@ namespace QuickBooks.Models.Repository
         private string _entityId = "";
 
         [Transaction]
-        public void Create(T entity)
+        public void Save(T entity)
         {
             try
             {

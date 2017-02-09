@@ -13,9 +13,8 @@ namespace QuickBooks.Models.Business
         /// <summary>
         /// Get the entity of OAuth from database.
         /// </summary>
-        /// <param name="realmId">entity realmId</param>
         /// <returns>found OAuth entity or null.</returns>
-        OAuth Get(string realmId);
+        OAuth Get();
         /// <summary>
         /// Get ServiceContext
         /// </summary>
@@ -24,7 +23,6 @@ namespace QuickBooks.Models.Business
         /// <summary>
         /// Delete entity.
         /// </summary>
-        /// <param name="id">entity id.</param>
-        void Delete(string id);
+        void Delete();
     }
 }

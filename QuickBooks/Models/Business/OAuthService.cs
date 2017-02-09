@@ -16,29 +16,28 @@ namespace QuickBooks.Models.Business
         private readonly string _consumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
         private readonly string _consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
         private const IntuitServicesType IntuitServicesType = Intuit.Ipp.Core.IntuitServicesType.QBO;
-        private readonly string _realmId = ConfigurationManager.AppSettings["realmId"];
         private readonly IOAuthRepository _oAuthRepository;
 
         public void Save(OAuth entity)
         {
-            _oAuthRepository.Create(entity);
+            _oAuthRepository.Save(entity);
         }
-        public OAuth Get(string realmId)
+        public OAuth Get()
         {
-            return _oAuthRepository.Get(realmId);
+            return _oAuthRepository.Get();
         }
         public ServiceContext GetServiceContext()
         {
-            var permission = Get(_realmId);
+            var permission = Get();
             var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
                 permission.AccessTokenSecret, _consumerKey, _consumerSecret);
             var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
                 oauthValidator);
             return context;
         }
-        public void Delete(string id)
+        public void Delete()
         {
-            _oAuthRepository.Delete(id);
+            _oAuthRepository.Delete();
         }
     }
 }
