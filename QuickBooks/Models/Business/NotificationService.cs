@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,22 +11,18 @@ namespace QuickBooks.Models.Business
 {
     public class NotificationService : INotificationService
     {
-        public NotificationService(IInvoiceService invoiceService, ISalesReceiptService salesReceiptService,
-           IEstimateService estimateService, ICreditMemoService creditMemoService)
+        public NotificationService(params IService[] services)
         {
-           
-            _invoiceService = invoiceService;
-            _salesReceiptService = salesReceiptService;
-            _estimateService = estimateService;
-            _creditMemoService = creditMemoService;
+            serviceDictionary = new Dictionary<string, IService>();
+            foreach (var service in services)
+            {
+                serviceDictionary.Add(service.EntityName, service);
+            }
         }
         private static readonly ILog Log = LogManager.GetLogger<NotificationService>();
         private static string _payloadLoaded;
-        private readonly IInvoiceService _invoiceService;
-        private readonly ISalesReceiptService _salesReceiptService;
-        private readonly IEstimateService _estimateService;
-        private readonly ICreditMemoService _creditMemoService;
-       private static readonly string Verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
+        private readonly IDictionary<string, IService> serviceDictionary;
+        private static readonly string Verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
 
         public bool VerifyPayload(string intuitHeader, string payload)
         {
@@ -58,26 +55,12 @@ namespace QuickBooks.Models.Business
             try
             {
                 var webhooksData = GetWebooksEvents(notifications);
-  
+
                 foreach (var notification in webhooksData.EventNotifications)
                 {
                     foreach (var entity in notification.DataChangeEvent.Entities)
                     {
-                        switch (entity.Name)
-                        {
-                            case "Invoice":
-                                _invoiceService.Update(entity);
-                                break;
-                            case "CreditMemo":
-                                _creditMemoService.Update(entity);
-                                break;
-                            case "Estimate":
-                                _estimateService.Update(entity);
-                                break;
-                            case "SalesReceipt":
-                                _salesReceiptService.Update(entity);
-                                break;
-                        }
+                        Update(entity);
                     }
                 }
             }
@@ -86,6 +69,12 @@ namespace QuickBooks.Models.Business
                 Log.Error("Exception occured when application tried to update data", e);
                 throw;
             }
+        }
+
+        private void Update(Entity entity)
+        {
+            if (serviceDictionary.ContainsKey(entity.Name))
+                serviceDictionary[entity.Name].Process(entity);
         }
     }
 }

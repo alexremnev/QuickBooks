@@ -8,7 +8,7 @@ namespace QuickBooks.Models.Business
         /// <summary>
         /// Save the list of Sales Receipt in database.
         /// </summary>
-        /// <param name="entities">the list of sales receipt.</param>
+        /// <param name="list">the list of sales receipt.</param>
         void Save(IList<SalesReceipt> list = null);
     }
 }

@@ -1,5 +1,8 @@
 ﻿using System.Configuration;
 using Intuit.Ipp.Core;
+using Intuit.Ipp.DataService;
+using Intuit.Ipp.GlobalTaxService;
+using Intuit.Ipp.QueryFilter;
 using Intuit.Ipp.Security;
 using QuickBooks.Models.DAL;
 using QuickBooks.Models.Repository;
@@ -26,18 +29,38 @@ namespace QuickBooks.Models.Business
         {
             return _oAuthRepository.Get();
         }
-        public ServiceContext GetServiceContext()
+        public void Delete()
+        {
+            _oAuthRepository.Delete();
+        }
+        public ServiceContext GetContext()
         {
             var permission = Get();
             var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
                 permission.AccessTokenSecret, _consumerKey, _consumerSecret);
             var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
                 oauthValidator);
+            context.IppConfiguration.Message.Request.SerializationFormat =
+              Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+            context.IppConfiguration.Message.Response.SerializationFormat =
+                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
             return context;
         }
-        public void Delete()
+
+        public QueryService<T> GetQueryService<T>()
         {
-            _oAuthRepository.Delete();
+            return new QueryService<T>(GetContext());
         }
+
+        public DataService GetDataService()
+        {
+            return new DataService(GetContext());
+        }
+
+        public GlobalTaxService GetGlobalTaxService()
+        {
+            return new GlobalTaxService(GetContext());
+        }
+       
     }
 }

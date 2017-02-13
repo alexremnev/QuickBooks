@@ -10,7 +10,7 @@ namespace QuickBooks.Models.Business
         {
         }
 
-        public override void Save(IList<Estimate> entities)
+        public override void Save(IList<Estimate> list = null)
         {
         }
     }

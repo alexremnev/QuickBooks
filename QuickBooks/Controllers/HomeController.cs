@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.IO;
 using System.Net;
+using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
 using Common.Logging;
@@ -36,6 +37,8 @@ namespace QuickBooks.Controllers
         {
             try
             {
+                Random r = new Random();//todo
+                Session["a"] = r.Next(1, 100);//todo
                 var permission = _oauthService.Get();
                 if (permission?.AccessToken == null) return View(state);
                 state.isConnected = true;
@@ -74,10 +77,10 @@ namespace QuickBooks.Controllers
             }
         }
 
-        public ActionResult GetOauth([FromUri] string oauth_token, [FromUri] string oauth_verifier)
+        public ActionResult GetOauth([FromUri] string oauth_token, [FromUri] string oauth_verifier, [FromUri] string realmId)
         {
-            if (oauth_token == null || oauth_verifier == null) return RedirectToAction("Index");
-            GetAndSaveAccessToken(oauth_token, oauth_verifier);
+            if (oauth_token == null || oauth_verifier == null || realmId == null) return RedirectToAction("Index");
+            GetAndSaveAccessToken(oauth_token, oauth_verifier, realmId);
             state.isConnected = true;
             return View("Close");
         }
@@ -93,11 +96,12 @@ namespace QuickBooks.Controllers
             return new OAuthSession(consumerContext, RequestTokenUrl, OauthUrl, AccessTokenUrl);
         }
 
-        private void GetAndSaveAccessToken(string oauthToken, string verifier)
+        private void GetAndSaveAccessToken(string oauthToken, string verifier, string realmId)
         {
             var clientSession = CreateSession();
             var requestTokenSecret = HttpContext.Request.Cookies["requestTokenSecret"]?.Value;//todo
             var token = (IToken)Session["token"];
+            var a = Session["a"];
             var requesToken = new RequestToken
             {
                 ConsumerKey = ConsumerKey,
@@ -109,11 +113,10 @@ namespace QuickBooks.Controllers
             {
                 AccessToken = accessToken.Token,
                 AccessTokenSecret = accessToken.TokenSecret,
-                RealmId = Request.QueryString["realmId"]
+                RealmId = realmId
             };
             _oauthService.Delete();
             _oauthService.Save(oAuth);
-            // RedirectToAction("Index");
             RedirectToActionPermanent("Index", "Home");
         }
 
@@ -121,9 +124,14 @@ namespace QuickBooks.Controllers
         {
             var session = CreateSession();
             var requestToken = session.GetRequestToken();
-            HttpContext.Response.Cookies["requestTokenSecret"].Value = requestToken.TokenSecret;//todo
+            var cookie = new HttpCookie("requestTokenSecret")
+            {
+                Value = requestToken.TokenSecret,
+                Expires = DateTime.Now.AddMinutes(1)
+            };
+            HttpContext.Response.SetCookie(cookie);
             Session["token"] = requestToken;
-            Session["a"] = 222;//todo
+            Session["a"] = 'a';//todo
             var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(BaseUrl)}/GetOauth";
             Response.Redirect(authUrl);
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Web.Mvc;
 using Common.Logging;
@@ -9,18 +10,18 @@ namespace QuickBooks.Controllers
     public class ReportController : Controller
     {
         public ReportController(ICreditMemoService creditMemoService, IInvoiceService invoiceService,
-           ISalesReceiptService salesReceiptService, IEstimateService estimateService)
+           ISalesReceiptService salesReceiptService, params IService[] services)
         {
             _creditMemoService = creditMemoService;
             _invoiceService = invoiceService;
             _salesReceiptService = salesReceiptService;
-            _estimateService = estimateService;
+            _services = services;
         }
         private static readonly ILog Log = LogManager.GetLogger<ReportController>();
         private readonly ICreditMemoService _creditMemoService;
         private readonly IInvoiceService _invoiceService;
         private readonly ISalesReceiptService _salesReceiptService;
-        private readonly IEstimateService _estimateService;
+        private readonly IList<IService> _services;
 
         public ActionResult Save()
         {
@@ -59,10 +60,10 @@ namespace QuickBooks.Controllers
 
         private void RecalculateDocuments()
         {
-            _invoiceService.Recalculate();
-            _creditMemoService.Recalculate();
-            _salesReceiptService.Recalculate();
-            _estimateService.Recalculate();
+            foreach (var service in _services)
+            {
+                service.Recalculate();
+            }
         }
     }
 }

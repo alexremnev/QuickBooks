@@ -270,7 +270,6 @@
     <Compile Include="Models\Business\IInvoiceService.cs" />
     <Compile Include="Models\Repository\TaxRateRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QBCustomization\QBCustomization.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\web.config" />

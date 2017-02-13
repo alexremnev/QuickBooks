@@ -1,19 +1,15 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Common.Logging;
-using Intuit.Ipp.Core;
 using Intuit.Ipp.Data;
-using Intuit.Ipp.DataService;
 using Intuit.Ipp.Exception;
-using Intuit.Ipp.GlobalTaxService;
 using Intuit.Ipp.LinqExtender;
-using Intuit.Ipp.QueryFilter;
 using Intuit.Ipp.WebhooksService;
 using QuickBooks.Models.DAL;
 using QuickBooks.Models.Repository;
-using QuickBooks.QBCustomization;
 using Report = QuickBooks.Models.DAL.Report;
 using TaxRate = Intuit.Ipp.Data.TaxRate;
 
@@ -26,14 +22,14 @@ namespace QuickBooks.Models.Business
         {
             _reportRepository = reportRepository;
             _log = LogManager.GetLogger(GetType());
-            _entityName = entityName;
+            EntityName = entityName;
             _taxRepository = taxRepository;
             _oAuthService = oAuthService;
         }
         private readonly ILog _log;
         private readonly IReportRepository _reportRepository;
         private readonly ITaxRepository _taxRepository;
-        private readonly string _entityName;
+        public string EntityName { get; }
         private IDictionary<string, decimal> _taxRateDictionary;
         protected readonly IOAuthService _oAuthService;
 
@@ -43,11 +39,10 @@ namespace QuickBooks.Models.Business
             try
             {
                 _taxRateDictionary = GetCustomersTaxRate();
-                var context = QbCustomization.ApplyJsonSerilizationFormat(_oAuthService.GetServiceContext());
-                var dataService = new DataService(context);
-                var queryService = new QueryService<T>(context);
+                var dataService = _oAuthService.GetDataService();
+                var queryService = _oAuthService.GetQueryService<T>();
                 var entities = list ?? queryService.Select(x => x).ToList();
-                //  var entities = list ?? queryService.Where(x => x.DocNumber == 1042.ToString()).ToList();
+                //                var entities = list ?? queryService.Where(x => x.Id == 16.ToString()).ToList();
                 if (entities.Count == 0) return new List<T>();
                 foreach (var entity in entities)
                 {
@@ -56,7 +51,7 @@ namespace QuickBooks.Models.Business
                     var countrySubDivisionCode = entity.ShipAddr?.CountrySubDivisionCode;
                     if (countrySubDivisionCode == null) continue;
                     var percent = GetPercent(countrySubDivisionCode);
-                    SetTaxCodeRef(context, percent, entity);
+                    SetTaxCodeRef(percent, entity);
                     if (entity.TxnTaxDetail.TotalTax == 0) RecalculateTaxManually(entity, percent);
                     dataService.Update(entity);
                 }
@@ -64,14 +59,14 @@ namespace QuickBooks.Models.Business
             }
             catch (ValidationException e)
             {
-                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName} with id = {entityId}", e);
+                _log.Error($"Exception occured when application tried to recalculate sales tax in {EntityName} with id = {entityId}", e);
                 throw;
             }
             catch (Exception e)
             {
                 if (e.Message.Contains("An error occured while executing the query."))
                     _log.Error("In Quickbooks Online something went wrong. It can't execute a simple query!!!");
-                _log.Error($"Exception occured when application tried to recalculate sales tax in {_entityName} with id = {entityId}", e);
+                _log.Error($"Exception occured when application tried to recalculate sales tax in {EntityName} with id = {entityId}", e);
                 throw;
             }
         }
@@ -81,9 +76,7 @@ namespace QuickBooks.Models.Business
             var entityId = "";
             try
             {
-                var context = QbCustomization.ApplyJsonSerilizationFormat(_oAuthService.GetServiceContext());
-                var dataService = new DataService(context);
-                var queryService = new QueryService<T>(context);
+                var queryService = _oAuthService.GetQueryService<T>();
                 var entities = list ?? queryService.Select(x => x).ToList();
                 foreach (var entity in entities)
                 {
@@ -126,19 +119,18 @@ namespace QuickBooks.Models.Business
             }
             catch (Exception e)
             {
-                _log.Error($"Exception occured when application tried to save {_entityName} with id = {entityId}", e);
+                _log.Error($"Exception occured when application tried to save {EntityName} with id = {entityId}", e);
                 throw;
             }
         }
 
-        public void Update(Entity entity)
+        public void Process(Entity entity)
         {
-            var context = QbCustomization.ApplyJsonSerilizationFormat(_oAuthService.GetServiceContext());
             var entityId = "";
             try
             {
                 if (entity.Operation == "Delete") { _reportRepository.Delete(entity.Id); return; }
-                var service = new QueryService<T>(context);
+                var service = _oAuthService.GetQueryService<T>();
                 var entityFromQuickBooks = service.Where(x => x.Id == entity.Id).ToList();
                 if (entityFromQuickBooks.Count == 0) return;
                 entityId = entity.Id;
@@ -180,12 +172,12 @@ namespace QuickBooks.Models.Business
             return true;
         }
 
-        private static string GetTxnCodeRefValue(ServiceContext context, decimal taxRate)
+        private string GetTxnCodeRefValue(decimal taxRate)
         {
-            var taxCodeId = GetTaxRateId(context, taxRate);
+            var taxCodeId = GetTaxRateId(taxRate);
             if (taxCodeId != null)
             {
-                var taxCodeQueryService = new QueryService<TaxCode>(context);
+                var taxCodeQueryService = _oAuthService.GetQueryService<TaxCode>();
                 var stateTaxCodes = taxCodeQueryService.ExecuteIdsQuery("Select * From TaxCode");
                 var taxCode = stateTaxCodes.Where(code => code != null)
                     .Where(code => code.SalesTaxRateList != null)
@@ -200,7 +192,7 @@ namespace QuickBooks.Models.Business
                     return codeRefValue;
                 }
             }
-            var taxService = AddTaxService(context, taxRate);
+            var taxService = AddTaxService(taxRate);
             return taxService.TaxRateDetails[0].TaxRateId;
         }
 
@@ -237,27 +229,26 @@ namespace QuickBooks.Models.Business
             return taxRateList.ToDictionary(item => item.CountrySubDivisionCode.ToUpper(), item => item.Tax);
         }
 
-        private static string GetTaxRateId(ServiceContext context, decimal taxRate)
+        private string GetTaxRateId(decimal taxRate)
         {
-            var queryService = new QueryService<TaxRate>(context);
+            var queryService = _oAuthService.GetQueryService<TaxRate>();
             var taxRateId = queryService.Where(x => x.RateValue == taxRate && x.Active).Select(x => x.Id).FirstOrDefault();
             return taxRateId;
         }
 
-        public static TaxService AddTaxService(ServiceContext context, decimal percent)
+        public TaxService AddTaxService(decimal percent)
         {
-            var queryService = new QueryService<TaxAgency>(context);
+            var queryService = _oAuthService.GetQueryService<TaxAgency>();
             var taxAgency = queryService.Where(x => x != null).FirstOrDefault();
             if (taxAgency == null)
             {
-                var dataService = new DataService(context);
+                var dataService = _oAuthService.GetDataService();
                 taxAgency = dataService.Add(new TaxAgency { DisplayName = "New Tax Agency" });
             }
             var name = $"{percent} percent tax";
             var taxRateDetailses = new[] { new TaxRateDetails { RateValue = percent, RateValueSpecified = true, TaxAgencyId = taxAgency.Id, TaxApplicableOn = TaxRateApplicableOnEnum.Sales, TaxRateName = name } };
             var taxService = new TaxService { TaxCode = name, TaxRateDetails = taxRateDetailses };
-            context = QbCustomization.ApplyJsonSerilizationFormat(context);
-            var globalTaxService = new GlobalTaxService(context);
+            var globalTaxService = _oAuthService.GetGlobalTaxService();
             taxService = globalTaxService.AddTaxCode(taxService);
             return taxService;
         }
@@ -295,10 +286,17 @@ namespace QuickBooks.Models.Business
             }
         }
 
-        private static void SetTaxCodeRef(ServiceContext context, decimal percent, Transaction entity)
+        private void SetTaxCodeRef(decimal percent, Transaction entity)
         {
-            var taxRateRef = GetTxnCodeRefValue(context, percent);
+            var taxRateRef = GetTxnCodeRefValue(percent);
             entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType { Value = taxRateRef };
+        }
+
+        IList IService.Recalculate(IList list)
+        {
+            if (list == null) return (IList)Recalculate();
+            IList<T> genericList = list.Cast<T>().ToList();
+            return (IList)Recalculate(genericList);
         }
     }
 }

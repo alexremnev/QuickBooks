@@ -1,11 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Intuit.Ipp.Data;
-using Intuit.Ipp.DataService;
 using Intuit.Ipp.LinqExtender;
-using Intuit.Ipp.QueryFilter;
 using QuickBooks.Models.Repository;
-using QuickBooks.QBCustomization;
 
 namespace QuickBooks.Models.Business
 {
@@ -18,8 +15,7 @@ namespace QuickBooks.Models.Business
         public override void Save(IList<Invoice> list = null)
         {
             if (GetAccountingMethod() == ReportBasisEnum.Accrual) { base.Save(list); return; }
-            var context = QbCustomization.ApplyJsonSerilizationFormat(_oAuthService.GetServiceContext());
-            var queryService = new QueryService<Invoice>(context);
+            var queryService = _oAuthService.GetQueryService<Invoice>();
             var entities = list ?? queryService.Select(x => x).ToList();
             var paidedInvoices = entities.Where(x => x.LinkedTxn != null && IsPaid(x)).ToList();
             base.Save(paidedInvoices);
@@ -33,8 +29,7 @@ namespace QuickBooks.Models.Business
 
         private ReportBasisEnum GetAccountingMethod()
         {
-            var context = QbCustomization.ApplyJsonSerilizationFormat(_oAuthService.GetServiceContext());
-            var dataService = new DataService(context);
+            var dataService = _oAuthService.GetDataService();
             var preferences = dataService.FindAll(new Preferences()).ToList();
             var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
             return accountingMethod;
