@@ -51,9 +51,9 @@
             }
         </script>
         <div id="connect-to-qbo-div">
-            @if (Model.isConnected)
+            @if (Model.realmId!=null)
             {
-                <p style="color: green">My app is connected to QuickBooks Online.</p>
+                <p style="color: green">My app is connected to QuickBooks Online (id = @Model.realmId).</p>
             }
             else
             {
@@ -64,7 +64,7 @@
         <div>
             @using (@Html.BeginForm("Recalculate", "Report"))
             {
-                <button class="btn btn-success" id="RecalculateBtn" onclick="DisableSaveButton()">Recalculate sales tax</button>
+                <button class="btn btn-success" id="RecalculateBtn" onclick="DisableSaveButton()">Calculate sales tax</button>
                 <div><progress id="pr_1"></progress></div>
             }
         </div>

@@ -30,7 +30,7 @@ namespace QuickBooks.Models.Business
             // Convert the plaintext stream to a string.
             return System.Text.Encoding.Unicode.GetString(ms.ToArray());
         }
-        
+
         private static byte[] TruncateHash(string key, int length)
         {
             SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
@@ -41,7 +41,7 @@ namespace QuickBooks.Models.Business
             Array.Resize(ref hash, length);
             return hash;
         }
-     
+
         public string Encrypt(string plainText)
         {
             var tripleDes = new TripleDESCryptoServiceProvider();

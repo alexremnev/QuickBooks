@@ -6,11 +6,11 @@ namespace QuickBooks.Models.Business
     public interface IService
     {
         /// <summary>
-        /// Recalculate sales tax.
+        /// Calculate sales tax.
         /// </summary>
         /// <param name="list">entity which must be recalculated.</param>
         /// <returns>recalculated list of entities.</returns>
-        IList Recalculate(IList list = null);
+        IList Calculate(IList list = null);
         /// <summary>
         /// Process data.
         /// </summary>

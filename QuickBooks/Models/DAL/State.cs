@@ -2,6 +2,6 @@
 {
     public class State
     {
-        public bool isConnected { get; set; }
+        public string realmId { get; set; }
     }
 }

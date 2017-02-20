@@ -237,6 +237,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\Business\IPersistable.cs" />
     <Compile Include="Models\Business\IService.cs" />
     <Compile Include="Models\DAL\BaseEntity.cs" />
     <Compile Include="Models\DAL\EncryptedString.cs" />

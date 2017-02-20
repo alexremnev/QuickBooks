@@ -33,7 +33,7 @@ namespace QuickBooks.Models.Business
         private IDictionary<string, decimal> _taxRateDictionary;
         protected readonly IOAuthService _oAuthService;
 
-        public virtual IList<T> Recalculate(IList<T> list = null)
+        public virtual IList<T> Calculate(IList<T> list = null)
         {
             var entityId = "";
             try
@@ -42,7 +42,7 @@ namespace QuickBooks.Models.Business
                 var dataService = _oAuthService.GetDataService();
                 var queryService = _oAuthService.GetQueryService<T>();
                 var entities = list ?? queryService.Select(x => x).ToList();
-                //                var entities = list ?? queryService.Where(x => x.Id == 16.ToString()).ToList();
+                //                var entities = queryService.Select(x => x).Take(1).ToList();
                 if (entities.Count == 0) return new List<T>();
                 foreach (var entity in entities)
                 {
@@ -140,17 +140,17 @@ namespace QuickBooks.Models.Business
                     var reportEntity = _reportRepository.Get(entity.Id);
                     if (reportEntity == null)
                     {
-                        Recalculate(entityFromQuickBooks);
+                        Calculate(entityFromQuickBooks);
                         return;
                     }
                     if (IsEqualLines(entityFromQuickBooks[0].Line, reportEntity.LineItems)) return;
-                    var recalculatedList = Recalculate(entityFromQuickBooks);
+                    var recalculatedList = Calculate(entityFromQuickBooks);
                     _reportRepository.Delete(entity.Id);
                     Save(recalculatedList);
                 }
                 else
                 {
-                    var recalculatedList = Recalculate(entityFromQuickBooks);
+                    var recalculatedList = Calculate(entityFromQuickBooks);
                     Save(recalculatedList);
                 }
             }
@@ -161,13 +161,13 @@ namespace QuickBooks.Models.Business
             }
         }
 
-        private static bool IsEqualLines(IList<Line> quickBookslines, IList<LineItem> actuaLines)
+        private static bool IsEqualLines(IList<Line> quickBookslines, IList<LineItem> actualLines)
         {
-            if (quickBookslines.Count - actuaLines.Count != 0) return false;
+            if (quickBookslines.Count - actualLines.Count != 0) return false;
             for (var i = 0; i < quickBookslines.Count; i++)
             {
                 if (quickBookslines[i].DetailType == LineDetailTypeEnum.SubTotalLineDetail) return false;
-                if (quickBookslines[i].Amount != actuaLines[i].Amount) return false;
+                if (quickBookslines[i].Amount != actualLines[i].Amount) return false;
             }
             return true;
         }
@@ -292,11 +292,20 @@ namespace QuickBooks.Models.Business
             entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType { Value = taxRateRef };
         }
 
-        IList IService.Recalculate(IList list)
+        IList IService.Calculate(IList list)
         {
-            if (list == null) return (IList)Recalculate();
+            if (list == null) return (IList)Calculate();
             IList<T> genericList = list.Cast<T>().ToList();
-            return (IList)Recalculate(genericList);
+            return (IList)Calculate(genericList);
+        }
+        void IPersistable.Save(IList list)
+        {
+            if (list != null)
+            {
+                IList<T> genericList = list.Cast<T>().ToList();
+                Save(genericList);
+            }
+            Save();
         }
     }
 }

@@ -20,6 +20,7 @@ namespace QuickBooks.Models.Business
         private readonly string _consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
         private const IntuitServicesType IntuitServicesType = Intuit.Ipp.Core.IntuitServicesType.QBO;
         private readonly IOAuthRepository _oAuthRepository;
+        private ServiceContext context;
 
         public void Save(OAuth entity)
         {
@@ -33,13 +34,18 @@ namespace QuickBooks.Models.Business
         {
             _oAuthRepository.Delete();
         }
+
         public ServiceContext GetContext()
         {
+            if (context != null)
+            {
+                return context;
+            }
             var permission = Get();
             var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
-                permission.AccessTokenSecret, _consumerKey, _consumerSecret);
-            var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
-                oauthValidator);
+                  permission.AccessTokenSecret, _consumerKey, _consumerSecret);
+            context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
+                 oauthValidator);
             context.IppConfiguration.Message.Request.SerializationFormat =
               Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
             context.IppConfiguration.Message.Response.SerializationFormat =
@@ -61,6 +67,6 @@ namespace QuickBooks.Models.Business
         {
             return new GlobalTaxService(GetContext());
         }
-       
+
     }
 }

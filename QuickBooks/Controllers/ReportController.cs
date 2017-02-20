@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Mvc;
 using Common.Logging;
 using QuickBooks.Models.Business;
@@ -9,19 +10,12 @@ namespace QuickBooks.Controllers
 {
     public class ReportController : Controller
     {
-        public ReportController(ICreditMemoService creditMemoService, IInvoiceService invoiceService,
-           ISalesReceiptService salesReceiptService, params IService[] services)
+        public ReportController(params IPersistable[] services)
         {
-            _creditMemoService = creditMemoService;
-            _invoiceService = invoiceService;
-            _salesReceiptService = salesReceiptService;
             _services = services;
         }
         private static readonly ILog Log = LogManager.GetLogger<ReportController>();
-        private readonly ICreditMemoService _creditMemoService;
-        private readonly IInvoiceService _invoiceService;
-        private readonly ISalesReceiptService _salesReceiptService;
-        private readonly IList<IService> _services;
+        private readonly IList<IPersistable> _services;
 
         public ActionResult Save()
         {
@@ -41,7 +35,7 @@ namespace QuickBooks.Controllers
         {
             try
             {
-                RecalculateDocuments();
+                CalculateDocuments();
                 return RedirectToActionPermanent("Index", "Home");
             }
             catch (Exception e)
@@ -53,16 +47,24 @@ namespace QuickBooks.Controllers
 
         private void SaveData()
         {
-            _invoiceService.Save();
-            _creditMemoService.Save();
-            _salesReceiptService.Save();
-        }
-
-        private void RecalculateDocuments()
-        {
             foreach (var service in _services)
             {
-                service.Recalculate();
+                service.Save();
+            }
+        }
+
+        private void CalculateDocuments()
+        {
+            var tasks = new Task[_services.Count];
+            for (var i = 0; i < _services.Count; i++)
+            {
+                var i1 = i;
+                tasks[i] = Task.Factory.StartNew(() => _services[i1].Calculate());
+            }
+            foreach (var task in tasks)
+            {
+                task.Wait();
+                task.Dispose();
             }
         }
     }

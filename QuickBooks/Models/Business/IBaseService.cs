@@ -2,13 +2,13 @@
 
 namespace QuickBooks.Models.Business
 {
-    public interface IBaseService<T> : IService
+    public interface IBaseService<T> : IPersistable
     {
         /// <summary>
-        /// Recalculate sales tax.
+        /// Calculate sales tax.
         /// </summary>
         /// <param name="list">entity which must be recalculated.</param>
         /// <returns>recalculated list of entities.</returns>
-        IList<T> Recalculate(IList<T> list = null);
+        IList<T> Calculate(IList<T> list = null);
     }
 }

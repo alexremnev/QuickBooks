@@ -11,12 +11,5 @@ namespace QuickBooks
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
         }
-        public void Session_OnStart()
-        {
-        }
-
-        public void Session_OnEnd()
-        {
-        }
     }
 }

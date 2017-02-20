@@ -12,10 +12,10 @@ namespace QuickBooks.Models.Business
         {
         }
 
-        public override IList<SalesReceipt> Recalculate(IList<SalesReceipt> list = null)
+        public override IList<SalesReceipt> Calculate(IList<SalesReceipt> list = null)
         {
             DeleteDepositedSalesReceipts(list);
-            return base.Recalculate(list);
+            return base.Calculate(list);
         }
 
         private void DeleteDepositedSalesReceipts(IList<SalesReceipt> recalculateEntity)

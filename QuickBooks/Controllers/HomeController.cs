@@ -37,11 +37,9 @@ namespace QuickBooks.Controllers
         {
             try
             {
-                Random r = new Random();//todo
-                Session["a"] = r.Next(1, 100);//todo
                 var permission = _oauthService.Get();
                 if (permission?.AccessToken == null) return View(state);
-                state.isConnected = true;
+                state.realmId = permission.RealmId;
                 string notifications = null;
                 object hmacHeaderSignature = null;
                 if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
@@ -52,6 +50,7 @@ namespace QuickBooks.Controllers
                 }
                 var isRequestValid = _notificationService.VerifyPayload(hmacHeaderSignature?.ToString(), notifications);
                 if (!isRequestValid) return View(state);
+                //                Task.Factory.StartNew(()=> _notificationService.Process(notifications));
                 _notificationService.Process(notifications);
                 return new HttpStatusCodeResult(HttpStatusCode.OK);
                 //return View(state);
@@ -68,21 +67,31 @@ namespace QuickBooks.Controllers
             try
             {
                 if (connect != null && connect == true) FireAuth();
-                return View(state);
+                return RedirectToAction("Index", state);
             }
             catch (Exception e)
             {
-                Log.Error("Exception occured when you tried to get access into Quickbooks", e);
+                Log.Error("Exception occured when application tried to get request token into Quickbooks", e);
                 return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
             }
         }
 
-        public ActionResult GetOauth([FromUri] string oauth_token, [FromUri] string oauth_verifier, [FromUri] string realmId)
+        public ActionResult GetOauth([FromUri] string oauth_token, [FromUri] string oauth_verifier,
+            [FromUri] string realmId)
         {
-            if (oauth_token == null || oauth_verifier == null || realmId == null) return RedirectToAction("Index");
-            GetAndSaveAccessToken(oauth_token, oauth_verifier, realmId);
-            state.isConnected = true;
-            return View("Close");
+            try
+            {
+                if (oauth_token == null || oauth_verifier == null || realmId == null)
+                    RedirectToAction("Index", state);
+                GetAndSaveAccessToken(oauth_token, oauth_verifier, realmId);
+                state.realmId = realmId;
+                return View("Close");
+            }
+            catch (Exception e)
+            {
+                Log.Error("Exception occured when application tried to get access token into Quickbooks", e);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
+            }
         }
 
         private static IOAuthSession CreateSession()
@@ -98,10 +107,9 @@ namespace QuickBooks.Controllers
 
         private void GetAndSaveAccessToken(string oauthToken, string verifier, string realmId)
         {
+            var token = (string)Session["tokenSecret"];
             var clientSession = CreateSession();
-            var requestTokenSecret = HttpContext.Request.Cookies["requestTokenSecret"]?.Value;//todo
-            var token = (IToken)Session["token"];
-            var a = Session["a"];
+            var requestTokenSecret = HttpContext.Request.Cookies["requestTokenSecret"]?.Value;
             var requesToken = new RequestToken
             {
                 ConsumerKey = ConsumerKey,
@@ -127,11 +135,10 @@ namespace QuickBooks.Controllers
             var cookie = new HttpCookie("requestTokenSecret")
             {
                 Value = requestToken.TokenSecret,
-                Expires = DateTime.Now.AddMinutes(1)
+                Expires = DateTime.Now.AddMinutes(10)
             };
             HttpContext.Response.SetCookie(cookie);
-            Session["token"] = requestToken;
-            Session["a"] = 'a';//todo
+            Session["tokenSecret"] = requestToken.TokenSecret;
             var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(BaseUrl)}/GetOauth";
             Response.Redirect(authUrl);
         }
