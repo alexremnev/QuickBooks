@@ -5,23 +5,27 @@ using System.Threading.Tasks;
 using System.Web.Mvc;
 using Common.Logging;
 using QuickBooks.Models.Business;
+using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Controllers
 {
     public class ReportController : Controller
     {
-        public ReportController(params IPersistable[] services)
+        public ReportController(params IPersisting[] services)
         {
             _services = services;
         }
-        private static readonly ILog Log = LogManager.GetLogger<ReportController>();
-        private readonly IList<IPersistable> _services;
 
-        public ActionResult Save()
+        private static readonly ILog Log = LogManager.GetLogger<ReportController>();
+        private readonly IList<IPersisting> _services;
+
+        public ActionResult Save(State state)
         {
             try
             {
-                SaveData();
+                var realmId = state.selectedItem;
+                if (realmId != null)
+                    SaveData(realmId);
                 return RedirectToActionPermanent("Index", "Home");
             }
             catch (Exception e)
@@ -31,11 +35,13 @@ namespace QuickBooks.Controllers
             }
         }
 
-        public ActionResult Recalculate()
+        public ActionResult Recalculate(State state)
         {
             try
             {
-                CalculateDocuments();
+                var realmId = state.selectedItem;
+                if (realmId != null)
+                    CalculateDocuments(realmId);
                 return RedirectToActionPermanent("Index", "Home");
             }
             catch (Exception e)
@@ -45,27 +51,29 @@ namespace QuickBooks.Controllers
             }
         }
 
-        private void SaveData()
+        private void SaveData(string realmId)
         {
             foreach (var service in _services)
             {
-                service.Save();
+                service.Save(realmId);
             }
         }
 
-        private void CalculateDocuments()
+        private void CalculateDocuments(string realmId)
         {
             var tasks = new Task[_services.Count];
-            for (var i = 0; i < _services.Count; i++)
+            var counter = 0;
+            foreach (var service in _services)
             {
-                var i1 = i;
-                tasks[i] = Task.Factory.StartNew(() => _services[i1].Calculate());
+                tasks[counter] = Task.Factory.StartNew(() => service.Calculate(realmId));
+                counter++;
             }
-            foreach (var task in tasks)
-            {
-                task.Wait();
-                task.Dispose();
-            }
+//            for (var i = 0; i < _services.Count; i++)
+//            {
+//                var i1 = i;
+//                tasks[i] = Task.Factory.StartNew(() => _services[i1].Calculate());
+//            }
+            Task.WaitAll(tasks);
         }
     }
 }

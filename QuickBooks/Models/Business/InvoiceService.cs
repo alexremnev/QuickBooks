@@ -12,13 +12,13 @@ namespace QuickBooks.Models.Business
         {
         }
 
-        public override void Save(IList<Invoice> list = null)
+        public override void Save(string realmId, IList<Invoice> list = null)
         {
-            if (GetAccountingMethod() == ReportBasisEnum.Accrual) { base.Save(list); return; }
-            var queryService = _oAuthService.GetQueryService<Invoice>();
+            if (GetAccountingMethod(realmId) == ReportBasisEnum.Accrual) { base.Save(realmId,list); return; }
+            var queryService = _oAuthService.GetQueryService<Invoice>(realmId);
             var entities = list ?? queryService.Select(x => x).ToList();
             var paidedInvoices = entities.Where(x => x.LinkedTxn != null && IsPaid(x)).ToList();
-            base.Save(paidedInvoices);
+            base.Save(realmId,paidedInvoices);
         }
 
         private static bool IsPaid(Transaction invoice)
@@ -27,9 +27,9 @@ namespace QuickBooks.Models.Business
             return lines.Any(linkedTxn => linkedTxn.TxnType == "Payment" || (linkedTxn.TxnType == "ReimburseCharge"));
         }
 
-        private ReportBasisEnum GetAccountingMethod()
+        private ReportBasisEnum GetAccountingMethod(string realmId)
         {
-            var dataService = _oAuthService.GetDataService();
+            var dataService = _oAuthService.GetDataService(realmId);
             var preferences = dataService.FindAll(new Preferences()).ToList();
             var accountingMethod = preferences[0].ReportPrefs.ReportBasis;
             return accountingMethod;

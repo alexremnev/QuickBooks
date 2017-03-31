@@ -1,4 +1,5 @@
-﻿using System.Configuration;
+﻿using System.Collections.Generic;
+using System.Configuration;
 using Intuit.Ipp.Core;
 using Intuit.Ipp.DataService;
 using Intuit.Ipp.GlobalTaxService;
@@ -15,9 +16,10 @@ namespace QuickBooks.Models.Business
         {
             _oAuthRepository = oAuthRepository;
         }
-        private readonly string _appToken = ConfigurationManager.AppSettings["appToken"];
-        private readonly string _consumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
-        private readonly string _consumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
+
+        private readonly string _appToken = ConfigurationManager.AppSettings["qb.appToken"];
+        private readonly string _consumerKey = ConfigurationManager.AppSettings["qb.consumerKey"];
+        private readonly string _consumerSecret = ConfigurationManager.AppSettings["qb.consumerSecret"];
         private const IntuitServicesType IntuitServicesType = Intuit.Ipp.Core.IntuitServicesType.QBO;
         private readonly IOAuthRepository _oAuthRepository;
         private ServiceContext context;
@@ -26,47 +28,53 @@ namespace QuickBooks.Models.Business
         {
             _oAuthRepository.Save(entity);
         }
-        public OAuth Get()
+
+        public IList<OAuth> List()
         {
-            return _oAuthRepository.Get();
-        }
-        public void Delete()
-        {
-            _oAuthRepository.Delete();
+            return _oAuthRepository.List();
         }
 
-        public ServiceContext GetContext()
+        public OAuth Get(string realmId)
+        {
+            return _oAuthRepository.Get(realmId);
+        }
+
+        public void Delete(string realmId)
+        {
+            _oAuthRepository.Delete(realmId);
+        }
+
+        public ServiceContext GetContext(string realmId)
         {
             if (context != null)
             {
                 return context;
             }
-            var permission = Get();
+            var permission = Get(realmId); 
             var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
-                  permission.AccessTokenSecret, _consumerKey, _consumerSecret);
+                permission.AccessTokenSecret, _consumerKey, _consumerSecret);
             context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
-                 oauthValidator);
+                oauthValidator);
             context.IppConfiguration.Message.Request.SerializationFormat =
-              Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
+                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
             context.IppConfiguration.Message.Response.SerializationFormat =
                 Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
             return context;
         }
 
-        public QueryService<T> GetQueryService<T>()
+        public QueryService<T> GetQueryService<T>(string realmId)
         {
-            return new QueryService<T>(GetContext());
+            return new QueryService<T>(GetContext(realmId));
         }
 
-        public DataService GetDataService()
+        public DataService GetDataService(string realmId)
         {
-            return new DataService(GetContext());
+            return new DataService(GetContext(realmId));
         }
 
-        public GlobalTaxService GetGlobalTaxService()
+        public GlobalTaxService GetGlobalTaxService(string realmId)
         {
-            return new GlobalTaxService(GetContext());
+            return new GlobalTaxService(GetContext(realmId));
         }
-
     }
 }

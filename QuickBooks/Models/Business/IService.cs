@@ -8,14 +8,17 @@ namespace QuickBooks.Models.Business
         /// <summary>
         /// Calculate sales tax.
         /// </summary>
+        /// <param name="realmId">entity realmId.</param>
         /// <param name="list">entity which must be recalculated.</param>
         /// <returns>recalculated list of entities.</returns>
-        IList Calculate(IList list = null);
+        IList Calculate(string realmId, IList list = null);
+
         /// <summary>
         /// Process data.
         /// </summary>
+        /// <param name="realmId">entityt realmId.</param>
         /// <param name="entity">entity Intuit.Ipp.WebhooksService.Entity.</param>
-        void Process(Entity entity);
+        void Process(string realmId, Entity entity);
         string EntityName { get; }
     }
 }

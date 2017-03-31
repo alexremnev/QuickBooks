@@ -1,7 +1,12 @@
-﻿namespace QuickBooks.Models.DAL
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Web.Mvc;
+
+namespace QuickBooks.Models.DAL
 {
     public class State
     {
-        public string realmId { get; set; }
+        public List<string> realmIds;
+        public string selectedItem { get; set; }
     }
 }

@@ -19,10 +19,11 @@ namespace QuickBooks.Models.Business
                 serviceDictionary.Add(service.EntityName, service);
             }
         }
+
         private static readonly ILog Log = LogManager.GetLogger<NotificationService>();
-        private static string _payloadLoaded;
+        private string _payloadLoaded;
         private readonly IDictionary<string, IService> serviceDictionary;
-        private static readonly string Verifier = ConfigurationManager.AppSettings["WebHooksVerifier"];
+        private static readonly string Verifier = ConfigurationManager.AppSettings["qb.webHooksVerifier"];
 
         public bool VerifyPayload(string intuitHeader, string payload)
         {
@@ -58,9 +59,10 @@ namespace QuickBooks.Models.Business
 
                 foreach (var notification in webhooksData.EventNotifications)
                 {
+                    var realmId = notification.RealmId;
                     foreach (var entity in notification.DataChangeEvent.Entities)
                     {
-                        Update(entity);
+                        Update(realmId, entity);
                     }
                 }
             }
@@ -71,10 +73,10 @@ namespace QuickBooks.Models.Business
             }
         }
 
-        private void Update(Entity entity)
+        private void Update(string realmId, Entity entity)
         {
             if (serviceDictionary.ContainsKey(entity.Name))
-                serviceDictionary[entity.Name].Process(entity);
+                serviceDictionary[entity.Name].Process(realmId, entity);
         }
     }
 }

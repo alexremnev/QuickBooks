@@ -8,7 +8,8 @@ namespace QuickBooks.Models.Business
         /// <summary>
         /// Save the list of Credit Memo in database.
         /// </summary>
+        /// <param name="realmId">entity realmId.</param>
         /// <param name="list">the list of Credit Memo.</param>
-        void Save(IList<CreditMemo> list = null);
+        void Save(string realmId, IList<CreditMemo> list = null);
     }
 }

@@ -4,7 +4,7 @@ using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Models.Repository
 {
-    public class TaxRateRepository : BaseRepository<TaxRate>, ITaxRepository
+    public class TaxRateRepository : Repository<TaxRate>, ITaxRepository
     {
         public TaxRateRepository() : base(NameEntity)
         {

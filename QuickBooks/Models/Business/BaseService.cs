@@ -18,7 +18,8 @@ namespace QuickBooks.Models.Business
 {
     public abstract class BaseService<T> : IBaseService<T> where T : SalesTransaction
     {
-        protected BaseService(IReportRepository reportRepository, ITaxRepository taxRepository, IOAuthService oAuthService, string entityName)
+        protected BaseService(IReportRepository reportRepository, ITaxRepository taxRepository,
+            IOAuthService oAuthService, string entityName)
         {
             _reportRepository = reportRepository;
             _log = LogManager.GetLogger(GetType());
@@ -26,6 +27,7 @@ namespace QuickBooks.Models.Business
             _taxRepository = taxRepository;
             _oAuthService = oAuthService;
         }
+
         private readonly ILog _log;
         private readonly IReportRepository _reportRepository;
         private readonly ITaxRepository _taxRepository;
@@ -33,14 +35,14 @@ namespace QuickBooks.Models.Business
         private IDictionary<string, decimal> _taxRateDictionary;
         protected readonly IOAuthService _oAuthService;
 
-        public virtual IList<T> Calculate(IList<T> list = null)
+        public virtual IList<T> Calculate(string realmId,IList<T> list = null)
         {
             var entityId = "";
             try
             {
                 _taxRateDictionary = GetCustomersTaxRate();
-                var dataService = _oAuthService.GetDataService();
-                var queryService = _oAuthService.GetQueryService<T>();
+                var dataService = _oAuthService.GetDataService(realmId);
+                var queryService = _oAuthService.GetQueryService<T>(realmId);
                 var entities = list ?? queryService.Select(x => x).ToList();
                 //                var entities = queryService.Select(x => x).Take(1).ToList();
                 if (entities.Count == 0) return new List<T>();
@@ -51,7 +53,7 @@ namespace QuickBooks.Models.Business
                     var countrySubDivisionCode = entity.ShipAddr?.CountrySubDivisionCode;
                     if (countrySubDivisionCode == null) continue;
                     var percent = GetPercent(countrySubDivisionCode);
-                    SetTaxCodeRef(percent, entity);
+                    SetTaxCodeRef(realmId, percent, entity);
                     if (entity.TxnTaxDetail.TotalTax == 0) RecalculateTaxManually(entity, percent);
                     dataService.Update(entity);
                 }
@@ -59,30 +61,32 @@ namespace QuickBooks.Models.Business
             }
             catch (ValidationException e)
             {
-                _log.Error($"Exception occured when application tried to recalculate sales tax in {EntityName} with id = {entityId}", e);
+                _log.Error(
+                    $"Exception occured when application tried to recalculate sales tax in {EntityName} with id = {entityId}",
+                    e);
                 throw;
             }
             catch (Exception e)
             {
                 if (e.Message.Contains("An error occured while executing the query."))
                     _log.Error("In Quickbooks Online something went wrong. It can't execute a simple query!!!");
-                _log.Error($"Exception occured when application tried to recalculate sales tax in {EntityName} with id = {entityId}", e);
+                _log.Error(
+                    $"Exception occured when application tried to recalculate sales tax in {EntityName} with id = {entityId}",
+                    e);
                 throw;
             }
         }
 
-        public virtual void Save(IList<T> list = null)
+        public virtual void Save(string realmId, IList<T> list = null)
         {
             var entityId = "";
             try
             {
-                var queryService = _oAuthService.GetQueryService<T>();
+                var queryService = _oAuthService.GetQueryService<T>(realmId);
                 var entities = list ?? queryService.Select(x => x).ToList();
                 foreach (var entity in entities)
                 {
-                    var document = new Report();
-                    var lineItems = new List<LineItem>();
-                    document.Id = entity.Id;
+                    var document = new Report {Id = entity.Id};
                     entityId = entity.Id;
                     document.DocumentNumber = entity.DocNumber;
                     document.SaleDate = entity.TxnDate;
@@ -102,18 +106,7 @@ namespace QuickBooks.Models.Business
                         _reportRepository.Save(document);
                         continue;
                     }
-                    foreach (var line in entity.Line)
-                    {
-                        var lineItem = new LineItem();
-                        if (line == null) continue;
-                        lineItem.Amount = line.Amount;
-                        if (!(line.AnyIntuitObject is SalesItemLineDetail)) continue;
-                        lineItem.Quantity = (int)((SalesItemLineDetail)line.AnyIntuitObject).Qty;
-                        if (((SalesItemLineDetail)line.AnyIntuitObject).ItemRef == null) continue;
-                        lineItem.Name = ((SalesItemLineDetail)line.AnyIntuitObject).ItemRef.name;
-                        lineItems.Add(lineItem);
-                    }
-                    document.LineItems = lineItems;
+                    document.LineItems = GetLineItems(entity);
                     _reportRepository.Save(document);
                 }
             }
@@ -124,34 +117,55 @@ namespace QuickBooks.Models.Business
             }
         }
 
-        public void Process(Entity entity)
+        private static List<LineItem> GetLineItems(T entity)
         {
-            var entityId = "";
+            var lineItems = new List<LineItem>();
+            foreach (var line in entity.Line)
+            {
+                var lineItem = new LineItem();
+                if (line == null) continue;
+                lineItem.Amount = line.Amount;
+                if (!(line.AnyIntuitObject is SalesItemLineDetail)) continue;
+                lineItem.Quantity = (int) ((SalesItemLineDetail) line.AnyIntuitObject).Qty;
+                if (((SalesItemLineDetail) line.AnyIntuitObject).ItemRef == null) continue;
+                lineItem.Name = ((SalesItemLineDetail) line.AnyIntuitObject).ItemRef.name;
+                lineItems.Add(lineItem);
+            }
+            return lineItems;
+        }
+
+       
+        public void Process(string realmId, Entity entity)
+        {
+            var entityId = entity.Id;
             try
             {
-                if (entity.Operation == "Delete") { _reportRepository.Delete(entity.Id); return; }
-                var service = _oAuthService.GetQueryService<T>();
+                if (entity.Operation == "Delete")
+                {
+                    _reportRepository.Delete(entity.Id);
+                    return;
+                }
+                var service = _oAuthService.GetQueryService<T>(realmId);
                 var entityFromQuickBooks = service.Where(x => x.Id == entity.Id).ToList();
                 if (entityFromQuickBooks.Count == 0) return;
-                entityId = entity.Id;
                 if (entity.Operation != "Create")
                 {
                     if (entity.Operation != "Update") return;
                     var reportEntity = _reportRepository.Get(entity.Id);
                     if (reportEntity == null)
                     {
-                        Calculate(entityFromQuickBooks);
+                        Calculate(realmId,entityFromQuickBooks);
                         return;
                     }
                     if (IsEqualLines(entityFromQuickBooks[0].Line, reportEntity.LineItems)) return;
-                    var recalculatedList = Calculate(entityFromQuickBooks);
+                    var recalculatedList = Calculate(realmId,entityFromQuickBooks);
                     _reportRepository.Delete(entity.Id);
-                    Save(recalculatedList);
+                    Save(realmId,recalculatedList);
                 }
                 else
                 {
-                    var recalculatedList = Calculate(entityFromQuickBooks);
-                    Save(recalculatedList);
+                    var recalculatedList = Calculate(realmId,entityFromQuickBooks);
+                    Save(realmId,recalculatedList);
                 }
             }
             catch (Exception e)
@@ -172,12 +186,12 @@ namespace QuickBooks.Models.Business
             return true;
         }
 
-        private string GetTxnCodeRefValue(decimal taxRate)
+        private string GetTxnCodeRefValue(string realmId, decimal taxRate)
         {
-            var taxCodeId = GetTaxRateId(taxRate);
+            var taxCodeId = GetTaxRateId(realmId,taxRate);
             if (taxCodeId != null)
             {
-                var taxCodeQueryService = _oAuthService.GetQueryService<TaxCode>();
+                var taxCodeQueryService = _oAuthService.GetQueryService<TaxCode>(realmId);
                 var stateTaxCodes = taxCodeQueryService.ExecuteIdsQuery("Select * From TaxCode");
                 var taxCode = stateTaxCodes.Where(code => code != null)
                     .Where(code => code.SalesTaxRateList != null)
@@ -192,7 +206,7 @@ namespace QuickBooks.Models.Business
                     return codeRefValue;
                 }
             }
-            var taxService = AddTaxService(taxRate);
+            var taxService = AddTaxService(realmId,taxRate);
             return taxService.TaxRateDetails[0].TaxRateId;
         }
 
@@ -204,7 +218,7 @@ namespace QuickBooks.Models.Business
                 var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
                 if (lineDetail == null) continue;
                 if (isNeedToAddLine) isNeedToAddLine = false;
-                if (lineDetail.TaxCodeRef == null) lineDetail.TaxCodeRef = new ReferenceType { Value = "TAX" };
+                if (lineDetail.TaxCodeRef == null) lineDetail.TaxCodeRef = new ReferenceType {Value = "TAX"};
                 lineDetail.TaxCodeRef.Value = "TAX";
             }
             if (isNeedToAddLine) AddLine(entity);
@@ -229,26 +243,37 @@ namespace QuickBooks.Models.Business
             return taxRateList.ToDictionary(item => item.CountrySubDivisionCode.ToUpper(), item => item.Tax);
         }
 
-        private string GetTaxRateId(decimal taxRate)
+        private string GetTaxRateId(string realmId, decimal taxRate)
         {
-            var queryService = _oAuthService.GetQueryService<TaxRate>();
-            var taxRateId = queryService.Where(x => x.RateValue == taxRate && x.Active).Select(x => x.Id).FirstOrDefault();
+            var queryService = _oAuthService.GetQueryService<TaxRate>(realmId);
+            var taxRateId =
+                queryService.Where(x => x.RateValue == taxRate && x.Active).Select(x => x.Id).FirstOrDefault();
             return taxRateId;
         }
 
-        public TaxService AddTaxService(decimal percent)
+        public TaxService AddTaxService(string realmId, decimal percent)
         {
-            var queryService = _oAuthService.GetQueryService<TaxAgency>();
+            var queryService = _oAuthService.GetQueryService<TaxAgency>(realmId);
             var taxAgency = queryService.Where(x => x != null).FirstOrDefault();
             if (taxAgency == null)
             {
-                var dataService = _oAuthService.GetDataService();
-                taxAgency = dataService.Add(new TaxAgency { DisplayName = "New Tax Agency" });
+                var dataService = _oAuthService.GetDataService(realmId);
+                taxAgency = dataService.Add(new TaxAgency {DisplayName = "New Tax Agency"});
             }
             var name = $"{percent} percent tax";
-            var taxRateDetailses = new[] { new TaxRateDetails { RateValue = percent, RateValueSpecified = true, TaxAgencyId = taxAgency.Id, TaxApplicableOn = TaxRateApplicableOnEnum.Sales, TaxRateName = name } };
-            var taxService = new TaxService { TaxCode = name, TaxRateDetails = taxRateDetailses };
-            var globalTaxService = _oAuthService.GetGlobalTaxService();
+            var taxRateDetailses = new[]
+            {
+                new TaxRateDetails
+                {
+                    RateValue = percent,
+                    RateValueSpecified = true,
+                    TaxAgencyId = taxAgency.Id,
+                    TaxApplicableOn = TaxRateApplicableOnEnum.Sales,
+                    TaxRateName = name
+                }
+            };
+            var taxService = new TaxService {TaxCode = name, TaxRateDetails = taxRateDetailses};
+            var globalTaxService = _oAuthService.GetGlobalTaxService(realmId);
             taxService = globalTaxService.AddTaxCode(taxService);
             return taxService;
         }
@@ -260,7 +285,7 @@ namespace QuickBooks.Models.Business
             {
                 var lineDetail = line.AnyIntuitObject as SalesItemLineDetail;
                 if (lineDetail == null) continue;
-                totalTax += line.Amount * percent / 100;
+                totalTax += line.Amount*percent/100;
             }
             entity.TxnTaxDetail.TotalTax = totalTax;
         }
@@ -278,34 +303,40 @@ namespace QuickBooks.Models.Business
                     DetailTypeSpecified = true,
                     DetailType = LineDetailTypeEnum.SalesItemLineDetail,
                     LineNum = 1.ToString(),
-                    AnyIntuitObject = new SalesItemLineDetail { ItemRef = new ReferenceType { Value = 1.ToString() }, TaxCodeRef = new ReferenceType { Value = "Tax" } }
+                    AnyIntuitObject =
+                        new SalesItemLineDetail
+                        {
+                            ItemRef = new ReferenceType {Value = 1.ToString()},
+                            TaxCodeRef = new ReferenceType {Value = "Tax"}
+                        }
                 };
-                var newLines = new[] { newLine, line };
+                var newLines = new[] {newLine, line};
                 entity.Line = newLines;
                 return;
             }
         }
 
-        private void SetTaxCodeRef(decimal percent, Transaction entity)
+        private void SetTaxCodeRef(string realmId, decimal percent, Transaction entity)
         {
-            var taxRateRef = GetTxnCodeRefValue(percent);
-            entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType { Value = taxRateRef };
+            var taxRateRef = GetTxnCodeRefValue(realmId,percent);
+            entity.TxnTaxDetail.TxnTaxCodeRef = new ReferenceType {Value = taxRateRef};
         }
 
-        IList IService.Calculate(IList list)
+        IList IService.Calculate(string realmId, IList list)
         {
-            if (list == null) return (IList)Calculate();
+            if (list == null) return (IList) Calculate(realmId);
             IList<T> genericList = list.Cast<T>().ToList();
-            return (IList)Calculate(genericList);
+            return (IList) Calculate(realmId,genericList);
         }
-        void IPersistable.Save(IList list)
+
+        void IPersisting.Save(string realmId, IList list)
         {
             if (list != null)
             {
                 IList<T> genericList = list.Cast<T>().ToList();
-                Save(genericList);
+                Save(realmId,genericList);
             }
-            Save();
+            Save(realmId);
         }
     }
 }

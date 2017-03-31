@@ -6,9 +6,9 @@ using Spring.Transaction.Interceptor;
 
 namespace QuickBooks.Models.Repository
 {
-    public abstract class BaseRepository<T> : IBaseRepository<T> where T : class
+    public abstract class Repository<T> : IRepository<T> where T : class
     {
-        protected BaseRepository(string entityName)
+        protected Repository(string entityName)
         {
             Log = LogManager.GetLogger(GetType());
             _entityName = entityName;

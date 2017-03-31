@@ -12,17 +12,17 @@ namespace QuickBooks.Models.Business
         {
         }
 
-        public override IList<SalesReceipt> Calculate(IList<SalesReceipt> list = null)
+        public override IList<SalesReceipt> Calculate(string realmId, IList<SalesReceipt> list = null)
         {
-            DeleteDepositedSalesReceipts(list);
-            return base.Calculate(list);
+            DeleteDepositedSalesReceipts(realmId,list);
+            return base.Calculate(realmId,list);
         }
 
-        private void DeleteDepositedSalesReceipts(IList<SalesReceipt> recalculateEntity)
+        private void DeleteDepositedSalesReceipts(string realmId,IList<SalesReceipt> recalculateEntity)
         {
-            var queryService = _oAuthService.GetQueryService<SalesReceipt>();
+            var queryService = _oAuthService.GetQueryService<SalesReceipt>(realmId);
             var entities = recalculateEntity ?? queryService.Select(x => x).ToList();
-            var dataService = _oAuthService.GetDataService();
+            var dataService = _oAuthService.GetDataService(realmId);
             var deposits = dataService.FindAll(new Deposit());
             foreach (var salesReceipt in entities)
             {

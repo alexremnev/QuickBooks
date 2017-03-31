@@ -1,9 +1,9 @@
 ﻿namespace QuickBooks.Models.Repository
 {
-    public interface IBaseRepository<T> where T : class
+    public interface IRepository<T> where T : class
     {
         /// <summary>
-        /// Save entity in database.
+        /// Create entity in database.
         /// </summary>
         /// <param name="entity">the entity which must be saved in database. if entity is null occurs ArgumentNullException.</param>
         void Save(T entity);

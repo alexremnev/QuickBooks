@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Configuration;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web;
-using System.Web.Http;
 using System.Web.Mvc;
 using Common.Logging;
 using DevDefined.OAuth.Consumer;
@@ -21,6 +22,7 @@ namespace QuickBooks.Controllers
             _oauthService = oAuthService;
             _notificationService = notificationService;
         }
+
         private readonly IOAuthService _oauthService;
         private readonly INotificationService _notificationService;
         private static readonly ILog Log = LogManager.GetLogger<HomeController>();
@@ -28,8 +30,8 @@ namespace QuickBooks.Controllers
         private static readonly string AccessTokenUrl = ConfigurationManager.AppSettings["GetAccessToken"];
         private static readonly string AuthorizeUrl = ConfigurationManager.AppSettings["AuthorizeUrl"];
         private static readonly string OauthUrl = ConfigurationManager.AppSettings["OauthLink"];
-        private static readonly string ConsumerKey = ConfigurationManager.AppSettings["ConsumerKey"];
-        private static readonly string ConsumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
+        private static readonly string ConsumerKey = ConfigurationManager.AppSettings["qb.consumerKey"];
+        private static readonly string ConsumerSecret = ConfigurationManager.AppSettings["qb.consumerSecret"];
         private static readonly string BaseUrl = ConfigurationManager.AppSettings["BaseUrl"];
         private readonly State state = new State();
 
@@ -37,23 +39,12 @@ namespace QuickBooks.Controllers
         {
             try
             {
-                var permission = _oauthService.Get();
-                if (permission?.AccessToken == null) return View(state);
-                state.realmId = permission.RealmId;
-                string notifications = null;
-                object hmacHeaderSignature = null;
-                if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
-                {
-                    System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
-                    notifications = new StreamReader(Request.InputStream).ReadToEnd();
-                    hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
-                }
-                var isRequestValid = _notificationService.VerifyPayload(hmacHeaderSignature?.ToString(), notifications);
-                if (!isRequestValid) return View(state);
-                //                Task.Factory.StartNew(()=> _notificationService.Process(notifications));
-                _notificationService.Process(notifications);
-                return new HttpStatusCodeResult(HttpStatusCode.OK);
-                //return View(state);
+//                var permission = _oauthService.Get();
+//                if (permission?.AccessToken == null) return View(state);
+//                state.realmId = permission.RealmId;
+//                return View(state);
+                state.realmIds = _oauthService.List().Select(x => x.RealmId).ToList();
+                return View("Index", state);
             }
             catch (Exception e)
             {
@@ -62,11 +53,11 @@ namespace QuickBooks.Controllers
             }
         }
 
-        public ActionResult Oauth([FromUri] bool? connect)
+        public ActionResult Oauth()
         {
             try
             {
-                if (connect != null && connect == true) FireAuth();
+                FireAuth();
                 return RedirectToAction("Index", state);
             }
             catch (Exception e)
@@ -76,15 +67,14 @@ namespace QuickBooks.Controllers
             }
         }
 
-        public ActionResult GetOauth([FromUri] string oauth_token, [FromUri] string oauth_verifier,
-            [FromUri] string realmId)
+        public ActionResult GetOauth(string oauth_token, string oauth_verifier, string realmId)
         {
             try
             {
                 if (oauth_token == null || oauth_verifier == null || realmId == null)
                     RedirectToAction("Index", state);
                 GetAndSaveAccessToken(oauth_token, oauth_verifier, realmId);
-                state.realmId = realmId;
+                //  state.realmId = realmId;
                 return View("Close");
             }
             catch (Exception e)
@@ -107,7 +97,6 @@ namespace QuickBooks.Controllers
 
         private void GetAndSaveAccessToken(string oauthToken, string verifier, string realmId)
         {
-            var token = (string)Session["tokenSecret"];
             var clientSession = CreateSession();
             var requestTokenSecret = HttpContext.Request.Cookies["requestTokenSecret"]?.Value;
             var requesToken = new RequestToken
@@ -123,7 +112,7 @@ namespace QuickBooks.Controllers
                 AccessTokenSecret = accessToken.TokenSecret,
                 RealmId = realmId
             };
-            _oauthService.Delete();
+            _oauthService.Delete(realmId);
             _oauthService.Save(oAuth);
             RedirectToActionPermanent("Index", "Home");
         }
@@ -139,33 +128,33 @@ namespace QuickBooks.Controllers
             };
             HttpContext.Response.SetCookie(cookie);
             Session["tokenSecret"] = requestToken.TokenSecret;
-            var authUrl = $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(BaseUrl)}/GetOauth";
+            var authUrl =
+                $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(BaseUrl)}/GetOauth";
             Response.Redirect(authUrl);
         }
 
-        //public ActionResult Notification()
-        //{
-        //    try
-        //    {
-        //        string notifications = null;
-        //        object hmacHeaderSignature = null;
-        //        if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
-        //        {
-        //            System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
-        //            notifications = new StreamReader(Request.InputStream).ReadToEnd();
-        //            hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
-        //        }
-        //        var isRequestValid = _notificationService.VerifyPayload(hmacHeaderSignature?.ToString(),
-        //            notifications);
-        //        if (!isRequestValid) return View("Index");
-        //        _notificationService.Process(notifications);
-        //        return new HttpStatusCodeResult(HttpStatusCode.OK);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Log.Error("Exception occured when application tried to handle incoming notifications", e);
-        //        return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
-        //    }
-        //}
+        public ActionResult Notification()
+        {
+            try
+            {
+                string notifications = null;
+                object hmacHeaderSignature = null;
+                if (System.Web.HttpContext.Current.Request.InputStream.CanSeek)
+                {
+                    System.Web.HttpContext.Current.Request.InputStream.Seek(0, SeekOrigin.Begin);
+                    notifications = new StreamReader(Request.InputStream).ReadToEnd();
+                    hmacHeaderSignature = System.Web.HttpContext.Current.Request.Headers["intuit-signature"];
+                }
+                var isRequestValid = _notificationService.VerifyPayload(hmacHeaderSignature?.ToString(), notifications);
+                if (!isRequestValid) return View("Index");
+                Task.Factory.StartNew(() => _notificationService.Process(notifications));
+                return new HttpStatusCodeResult(HttpStatusCode.OK);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Exception occured when application tried to handle incoming notifications", e);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError);
+            }
+        }
     }
 }

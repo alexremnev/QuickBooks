@@ -2,7 +2,7 @@
 
 namespace QuickBooks.Models.Repository
 {
-    public class ReportRepository : BaseRepository<Report>, IReportRepository
+    public class ReportRepository : Repository<Report>, IReportRepository
     {
         public ReportRepository() : base(NameEntity)
         {

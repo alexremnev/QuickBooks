@@ -6,9 +6,10 @@ namespace QuickBooks.Models.Business
     public interface ISalesReceiptService : IBaseService<SalesReceipt>
     {
         /// <summary>
-        /// Save the list of Sales Receipt in database.
+        /// Create the list of Sales Receipt in database.
         /// </summary>
+        /// <param name="realmId">entity realmId.</param>
         /// <param name="list">the list of sales receipt.</param>
-        void Save(IList<SalesReceipt> list = null);
+        void Save(string realmId, IList<SalesReceipt> list = null);
     }
 }

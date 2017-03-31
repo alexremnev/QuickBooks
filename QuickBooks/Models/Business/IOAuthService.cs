@@ -1,4 +1,5 @@
-﻿using Intuit.Ipp.Core;
+﻿using System.Collections.Generic;
+using Intuit.Ipp.Core;
 using Intuit.Ipp.DataService;
 using Intuit.Ipp.GlobalTaxService;
 using Intuit.Ipp.QueryFilter;
@@ -9,38 +10,45 @@ namespace QuickBooks.Models.Business
     public interface IOAuthService
     {
         /// <summary>
-        /// Save the realmId, accessToken and accessToken secret in database.
+        /// Create the realmId, accessToken and accessToken secret in database.
         /// </summary>
         /// <param name="entity">entity of OAuth</param>
         void Save(OAuth entity);
+
         /// <summary>
-        /// Get the entity of OAuth from database.
+        /// Delete entity from database.
         /// </summary>
-        /// <returns>found OAuth entity or null.</returns>
-        OAuth Get();
+        /// <param name="realmId">entity realmId</param>
+        void Delete(string realmId);
+
+        /// <summary>
+        /// Rerutns list of Oauth.
+        /// </summary>
+        /// <returns>list of Oauth or null in case if entities not found.</returns>
+        IList<OAuth> List();
+
         /// <summary>
         /// Get ServiceContext
         /// </summary>
         /// <returns>return ServiceContext or null.</returns>
-        ServiceContext GetContext();
-        /// <summary>
-        /// Delete entity.
-        /// </summary>
-        void Delete();
+        ServiceContext GetContext(string realmId);
+
         /// <summary>
         /// Get QueryService.
         /// </summary>
         /// <returns>return new QueryService or null.</returns>
-        QueryService<T> GetQueryService<T>();
+        QueryService<T> GetQueryService<T>(string realmId);
+
         /// <summary>
         /// Get DataService.
         /// </summary>
         /// <returns>return new DataService or null.</returns>
-        DataService GetDataService();
+        DataService GetDataService(string realmId);
+
         /// <summary>
         /// Get GlobalTaxService.
         /// </summary>
         /// <returns>Return GlobalTaxService or null.</returns>
-        GlobalTaxService GetGlobalTaxService();
+        GlobalTaxService GetGlobalTaxService(string realmId);
     }
 }

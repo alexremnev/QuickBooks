@@ -1,17 +1,14 @@
-﻿using QuickBooks.Models.DAL;
+﻿using System.Collections.Generic;
+using QuickBooks.Models.DAL;
 
 namespace QuickBooks.Models.Repository
 {
-    public interface IOAuthRepository : IBaseRepository<OAuth>
+    public interface IOAuthRepository : IRepository<OAuth>
     {
         /// <summary>
-        /// Get Oauth.
+        /// Rerutns list of Oauth from database.
         /// </summary>
-        /// <returns>found entity or null in case there's no entity.</returns>
-        OAuth Get();
-        /// <summary>
-        /// Delete an entity.
-        /// </summary>
-        void Delete();
+        /// <returns>list of Oauth or null in case if entities not found.</returns>
+        IList<OAuth> List();
     }
 }
