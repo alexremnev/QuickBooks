@@ -2,7 +2,8 @@
 
 namespace QuickBooks.Models.Business
 {
-    public interface ISalesReceiptService : IBaseService
+   public interface IRegistry<T>
     {
+        IList<T> GetServices();
     }
 }

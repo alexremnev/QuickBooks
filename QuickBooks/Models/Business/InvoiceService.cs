@@ -8,17 +8,22 @@ namespace QuickBooks.Models.Business
 {
     public class InvoiceService : BaseService<Invoice>, IInvoiceService
     {
-        public InvoiceService(IReportRepository reportRepository, ITaxRepository repository, IOAuthService oAuthService) : base(reportRepository, repository, oAuthService, "Invoice")
+        public InvoiceService(IReportRepository reportRepository, ITaxRateProvider taxRateProvider,
+            IOAuthService oAuthService) : base(reportRepository, taxRateProvider, oAuthService, "Invoice")
         {
         }
 
-        public override void Save(string realmId, IList<Invoice> list = null)
+        protected override void Save(string realmId, IList<Invoice> list)
         {
-            if (GetAccountingMethod(realmId) == ReportBasisEnum.Accrual) { base.Save(realmId,list); return; }
+            if (GetAccountingMethod(realmId) == ReportBasisEnum.Accrual)
+            {
+                base.Save(realmId, list);
+                return;
+            }
             var queryService = _oAuthService.GetQueryService<Invoice>(realmId);
             var entities = list ?? queryService.Select(x => x).ToList();
             var paidedInvoices = entities.Where(x => x.LinkedTxn != null && IsPaid(x)).ToList();
-            base.Save(realmId,paidedInvoices);
+            base.Save(realmId, paidedInvoices);
         }
 
         private static bool IsPaid(Transaction invoice)

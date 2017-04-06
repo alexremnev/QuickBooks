@@ -1,49 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using QuickBooks.Models.DAL;
+using QuickBooks.Models.Data;
+using Spring.Transaction.Interceptor;
 
 namespace QuickBooks.Models.Repository
 {
-    public class TaxRateRepository : Repository<TaxRate>, ITaxRepository
+    public class TaxRateRepository : BaseRepository<TaxRate>, ITaxRepository
     {
-        public TaxRateRepository() : base(NameEntity)
-        {
-        }
-        private const string NameEntity = "TaxRate";
-     
-        public TaxRate GetByCountrySubDivisionCode(string state)
-        {
-            TaxRate taxRate;
-            if (string.IsNullOrEmpty(state)) return null;
-            using (var session = Sessionfactory.OpenSession())
-            {
-                try
-                {
-                    taxRate = session.QueryOver<TaxRate>().Where(m => m.CountrySubDivisionCode == state).SingleOrDefault();
-                }
-                catch (Exception e)
-                {
-                    Log.Error(
-                        "Exception occured when application tried to get the product by name", e);
-                    throw;
-                }
-            }
-            return taxRate;
-        }
-
+        [Transaction(ReadOnly = true)]
         public IList<TaxRate> List()
         {
             try
             {
-                using (var session = Sessionfactory.OpenSession())
-                {
-                    var list = session.QueryOver<TaxRate>().List();
-                    return list;
-                }
+                return HibernateTemplate.LoadAll<TaxRate>();
             }
             catch (Exception e)
             {
-                Log.Error($"Exception occured when application tried to get the list of {NameEntity}s from database", e);
+                Log.Error($"Exception occured when application tried to get the list of entities from database", e);
                 throw;
             }
         }

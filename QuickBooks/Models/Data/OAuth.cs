@@ -1,4 +1,4 @@
-﻿namespace QuickBooks.Models.DAL
+﻿namespace QuickBooks.Models.Data
 {
     public class OAuth
     {

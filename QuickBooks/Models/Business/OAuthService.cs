@@ -5,7 +5,7 @@ using Intuit.Ipp.DataService;
 using Intuit.Ipp.GlobalTaxService;
 using Intuit.Ipp.QueryFilter;
 using Intuit.Ipp.Security;
-using QuickBooks.Models.DAL;
+using QuickBooks.Models.Data;
 using QuickBooks.Models.Repository;
 
 namespace QuickBooks.Models.Business
@@ -22,7 +22,7 @@ namespace QuickBooks.Models.Business
         private readonly string _consumerSecret = ConfigurationManager.AppSettings["qb.consumerSecret"];
         private const IntuitServicesType IntuitServicesType = Intuit.Ipp.Core.IntuitServicesType.QBO;
         private readonly IOAuthRepository _oAuthRepository;
-        private ServiceContext context;
+        // private ServiceContext context;
 
         public void Save(OAuth entity)
         {
@@ -46,19 +46,15 @@ namespace QuickBooks.Models.Business
 
         public ServiceContext GetContext(string realmId)
         {
-            if (context != null)
-            {
-                return context;
-            }
-            var permission = Get(realmId); 
+//            if (context != null)
+//            {
+//                return context;
+//            }
+            var permission = Get(realmId);
             var oauthValidator = new OAuthRequestValidator(permission.AccessToken,
                 permission.AccessTokenSecret, _consumerKey, _consumerSecret);
-            context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
+            var context = new ServiceContext(_appToken, permission.RealmId, IntuitServicesType,
                 oauthValidator);
-            context.IppConfiguration.Message.Request.SerializationFormat =
-                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
-            context.IppConfiguration.Message.Response.SerializationFormat =
-                Intuit.Ipp.Core.Configuration.SerializationFormat.Json;
             return context;
         }
 

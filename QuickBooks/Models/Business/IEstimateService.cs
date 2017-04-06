@@ -1,8 +1,6 @@
-﻿using Intuit.Ipp.Data;
-
-namespace QuickBooks.Models.Business
+﻿namespace QuickBooks.Models.Business
 {
-    public interface IEstimateService : IBaseService<Estimate>
+    public interface IEstimateService : IBaseService
     {
     }
 }

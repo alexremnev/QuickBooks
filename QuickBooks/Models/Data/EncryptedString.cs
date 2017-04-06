@@ -4,7 +4,7 @@ using NHibernate.SqlTypes;
 using NHibernate.UserTypes;
 using QuickBooks.Models.Business;
 
-namespace QuickBooks.Models.DAL
+namespace QuickBooks.Models.Data
 {
     public class EncryptedString : IUserType
     {

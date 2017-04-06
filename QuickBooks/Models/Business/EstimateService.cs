@@ -6,11 +6,11 @@ namespace QuickBooks.Models.Business
 {
     public class EstimateService : BaseService<Estimate>, IEstimateService
     {
-        public EstimateService(IReportRepository reportRepository, ITaxRepository repository, IOAuthService oAuthService) : base(reportRepository, repository, oAuthService, "Estimate")
+        public EstimateService(IReportRepository reportRepository, ITaxRateProvider taxRateProvider, IOAuthService oAuthService) : base(reportRepository, taxRateProvider, oAuthService, "Estimate")
         {
         }
 
-        public override void Save(string realmId, IList<Estimate> list = null)
+        protected override void Save(string realmId, IList<Estimate> list)
         {
         }
     }

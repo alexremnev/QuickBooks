@@ -2,7 +2,8 @@
 
 namespace QuickBooks.Models.Business
 {
-    public interface IInvoiceService : IBaseService
+    public interface ITaxRateProvider
     {
+        IDictionary<string, decimal> GetTaxRates();
     }
 }

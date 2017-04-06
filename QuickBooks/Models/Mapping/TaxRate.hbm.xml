@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" namespace="QuickBooks.Models.DAL" assembly="QuickBooks">
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" namespace="QuickBooks.Models.Data" assembly="QuickBooks">
   <class name="TaxRate" table ="TaxRate">
     <id name="Id">
       <generator class="identity"/>

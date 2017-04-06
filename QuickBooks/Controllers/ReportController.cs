@@ -5,19 +5,21 @@ using System.Threading.Tasks;
 using System.Web.Mvc;
 using Common.Logging;
 using QuickBooks.Models.Business;
-using QuickBooks.Models.DAL;
+using QuickBooks.Models.Data;
 
 namespace QuickBooks.Controllers
 {
     public class ReportController : Controller
     {
-        public ReportController(params IPersisting[] services)
+        public ReportController(ICalculatingServicesRegistry calculatingServicesRegistry, IPersistingServicesRegistry persistingServicesRegistry)
         {
-            _services = services;
+            _persistingServices = persistingServicesRegistry.GetServices();
+            _calculatingServices = calculatingServicesRegistry.GetServices();
         }
 
         private static readonly ILog Log = LogManager.GetLogger<ReportController>();
-        private readonly IList<IPersisting> _services;
+        private readonly IList<ICalculatingService> _calculatingServices;
+        private readonly IList<IPersistingService> _persistingServices;
 
         public ActionResult Save(State state)
         {
@@ -53,7 +55,7 @@ namespace QuickBooks.Controllers
 
         private void SaveData(string realmId)
         {
-            foreach (var service in _services)
+            foreach (var service in _persistingServices)
             {
                 service.Save(realmId);
             }
@@ -61,18 +63,13 @@ namespace QuickBooks.Controllers
 
         private void CalculateDocuments(string realmId)
         {
-            var tasks = new Task[_services.Count];
+            var tasks = new Task[_calculatingServices.Count];
             var counter = 0;
-            foreach (var service in _services)
+            foreach (var service in _calculatingServices)
             {
                 tasks[counter] = Task.Factory.StartNew(() => service.Calculate(realmId));
                 counter++;
             }
-//            for (var i = 0; i < _services.Count; i++)
-//            {
-//                var i1 = i;
-//                tasks[i] = Task.Factory.StartNew(() => _services[i1].Calculate());
-//            }
             Task.WaitAll(tasks);
         }
     }

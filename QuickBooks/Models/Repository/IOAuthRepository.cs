@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using QuickBooks.Models.DAL;
+using QuickBooks.Models.Data;
 
 namespace QuickBooks.Models.Repository
 {

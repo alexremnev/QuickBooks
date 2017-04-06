@@ -1,55 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Security.Cryptography;
-using System.Text;
 using Common.Logging;
 using Intuit.Ipp.WebhooksService;
-using Newtonsoft.Json;
 
 namespace QuickBooks.Models.Business
 {
-    public class NotificationService : INotificationService
+    public class NotificationService : WebhooksService, INotificationService
     {
-        public NotificationService(params IService[] services)
+        public NotificationService(IUpdatingServicesRegistry updatingServicesRegistry)
         {
-            serviceDictionary = new Dictionary<string, IService>();
-            foreach (var service in services)
+            var updatingServices = updatingServicesRegistry.GetServices();
+            serviceDictionary = new Dictionary<string, IUpdatingService>();
+            foreach (var service in updatingServices)
             {
                 serviceDictionary.Add(service.EntityName, service);
             }
         }
 
         private static readonly ILog Log = LogManager.GetLogger<NotificationService>();
-        private string _payloadLoaded;
-        private readonly IDictionary<string, IService> serviceDictionary;
-        private static readonly string Verifier = ConfigurationManager.AppSettings["qb.webHooksVerifier"];
-
-        public bool VerifyPayload(string intuitHeader, string payload)
-        {
-            try
-            {
-                _payloadLoaded = payload;
-                if (intuitHeader == null) return false;
-                var keyBytes = Encoding.UTF8.GetBytes(Verifier);
-                var dataBytes = Encoding.UTF8.GetBytes(_payloadLoaded);
-                var hmac = new HMACSHA256(keyBytes);
-                var hmacBytes = hmac.ComputeHash(dataBytes);
-                var createPayloadSignature = Convert.ToBase64String(hmacBytes);
-                return intuitHeader == createPayloadSignature;
-            }
-            catch (Exception e)
-            {
-                Log.Error("Exception occured when application tried to process notifications", e);
-                return false;
-            }
-        }
-
-        public WebhooksEvent GetWebooksEvents(string payload)
-        {
-            var webhooksData = JsonConvert.DeserializeObject<WebhooksEvent>(payload);
-            return webhooksData;
-        }
+        private readonly IDictionary<string, IUpdatingService> serviceDictionary;
 
         public void Process(string notifications)
         {
@@ -76,7 +45,7 @@ namespace QuickBooks.Models.Business
         private void Update(string realmId, Entity entity)
         {
             if (serviceDictionary.ContainsKey(entity.Name))
-                serviceDictionary[entity.Name].Process(realmId, entity);
+                serviceDictionary[entity.Name].Update(realmId, entity);
         }
     }
 }

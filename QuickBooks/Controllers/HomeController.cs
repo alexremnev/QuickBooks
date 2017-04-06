@@ -4,14 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Mvc;
 using Common.Logging;
 using DevDefined.OAuth.Consumer;
 using DevDefined.OAuth.Framework;
-using DevDefined.OAuth.Storage.Basic;
 using QuickBooks.Models.Business;
-using QuickBooks.Models.DAL;
+using QuickBooks.Models.Data;
 
 namespace QuickBooks.Controllers
 {
@@ -26,23 +24,19 @@ namespace QuickBooks.Controllers
         private readonly IOAuthService _oauthService;
         private readonly INotificationService _notificationService;
         private static readonly ILog Log = LogManager.GetLogger<HomeController>();
-        private static readonly string RequestTokenUrl = ConfigurationManager.AppSettings["GetRequestToken"];
-        private static readonly string AccessTokenUrl = ConfigurationManager.AppSettings["GetAccessToken"];
-        private static readonly string AuthorizeUrl = ConfigurationManager.AppSettings["AuthorizeUrl"];
-        private static readonly string OauthUrl = ConfigurationManager.AppSettings["OauthLink"];
+        private static readonly string RequestTokenUrl = ConfigurationManager.AppSettings["qb.getRequestToken"];
+        private static readonly string AccessTokenUrl = ConfigurationManager.AppSettings["qb.getAccessToken"];
+        private static readonly string AuthorizeUrl = ConfigurationManager.AppSettings["qb.authorizeUrl"];
+        private static readonly string OauthUrl = ConfigurationManager.AppSettings["qb_oauthLink"];
         private static readonly string ConsumerKey = ConfigurationManager.AppSettings["qb.consumerKey"];
         private static readonly string ConsumerSecret = ConfigurationManager.AppSettings["qb.consumerSecret"];
-        private static readonly string BaseUrl = ConfigurationManager.AppSettings["BaseUrl"];
+        private static readonly string BaseUrl = ConfigurationManager.AppSettings["baseUrl"];
         private readonly State state = new State();
 
         public ActionResult Index()
         {
             try
             {
-//                var permission = _oauthService.Get();
-//                if (permission?.AccessToken == null) return View(state);
-//                state.realmId = permission.RealmId;
-//                return View(state);
                 state.realmIds = _oauthService.List().Select(x => x.RealmId).ToList();
                 return View("Index", state);
             }
@@ -57,8 +51,7 @@ namespace QuickBooks.Controllers
         {
             try
             {
-                FireAuth();
-                return RedirectToAction("Index", state);
+                return FireAuth();
             }
             catch (Exception e)
             {
@@ -67,14 +60,13 @@ namespace QuickBooks.Controllers
             }
         }
 
-        public ActionResult GetOauth(string oauth_token, string oauth_verifier, string realmId)
+        public ActionResult GetOauth(string oauth_verifier, string realmId)
         {
             try
             {
-                if (oauth_token == null || oauth_verifier == null || realmId == null)
+                if (oauth_verifier == null || realmId == null)
                     RedirectToAction("Index", state);
-                GetAndSaveAccessToken(oauth_token, oauth_verifier, realmId);
-                //  state.realmId = realmId;
+                GetAndSaveAccessToken(oauth_verifier, realmId);
                 return View("Close");
             }
             catch (Exception e)
@@ -95,17 +87,11 @@ namespace QuickBooks.Controllers
             return new OAuthSession(consumerContext, RequestTokenUrl, OauthUrl, AccessTokenUrl);
         }
 
-        private void GetAndSaveAccessToken(string oauthToken, string verifier, string realmId)
+        private void GetAndSaveAccessToken(string verifier, string realmId)
         {
             var clientSession = CreateSession();
-            var requestTokenSecret = HttpContext.Request.Cookies["requestTokenSecret"]?.Value;
-            var requesToken = new RequestToken
-            {
-                ConsumerKey = ConsumerKey,
-                Token = oauthToken,
-                TokenSecret = requestTokenSecret
-            };
-            var accessToken = clientSession.ExchangeRequestTokenForAccessToken(requesToken, verifier);
+            var requestToken = (IToken) Session["token"];
+            var accessToken = clientSession.ExchangeRequestTokenForAccessToken(requestToken, verifier);
             var oAuth = new OAuth
             {
                 AccessToken = accessToken.Token,
@@ -117,20 +103,14 @@ namespace QuickBooks.Controllers
             RedirectToActionPermanent("Index", "Home");
         }
 
-        private void FireAuth()
+        private ActionResult FireAuth()
         {
             var session = CreateSession();
             var requestToken = session.GetRequestToken();
-            var cookie = new HttpCookie("requestTokenSecret")
-            {
-                Value = requestToken.TokenSecret,
-                Expires = DateTime.Now.AddMinutes(10)
-            };
-            HttpContext.Response.SetCookie(cookie);
-            Session["tokenSecret"] = requestToken.TokenSecret;
+            Session["token"] = requestToken;
             var authUrl =
                 $"{AuthorizeUrl}?oauth_token={requestToken.Token}&oauth_callback={UriUtility.UrlEncode(BaseUrl)}/GetOauth";
-            Response.Redirect(authUrl);
+            return Redirect(authUrl);
         }
 
         public ActionResult Notification()

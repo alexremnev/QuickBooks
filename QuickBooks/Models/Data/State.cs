@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Web.Mvc;
+﻿using System.Collections.Generic;
 
-namespace QuickBooks.Models.DAL
+namespace QuickBooks.Models.Data
 {
     public class State
     {

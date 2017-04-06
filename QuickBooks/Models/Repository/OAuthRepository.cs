@@ -1,24 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using QuickBooks.Models.DAL;
-using Spring.Data.NHibernate;
+using QuickBooks.Models.Data;
+using Spring.Transaction.Interceptor;
 
 namespace QuickBooks.Models.Repository
 {
-    public class OAuthRepository : Repository<OAuth>, IOAuthRepository
+    public class OAuthRepository : BaseRepository<OAuth>, IOAuthRepository
     {
-        public OAuthRepository() : base("OAuth")
-        {
-        }
-
+        [Transaction(ReadOnly = true)]
         public IList<OAuth> List()
         {
             try
             {
-                using (var session = Sessionfactory.OpenSession())
-                {
-                    return session.QueryOver<OAuth>().List();
-                }
+                return HibernateTemplate.LoadAll<OAuth>();
             }
             catch (Exception e)
             {

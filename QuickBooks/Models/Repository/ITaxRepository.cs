@@ -1,16 +1,10 @@
 ﻿using System.Collections.Generic;
-using QuickBooks.Models.DAL;
+using QuickBooks.Models.Data;
 
 namespace QuickBooks.Models.Repository
 {
     public interface ITaxRepository
     {
-        /// <summary>
-        /// Get tax rate depends on state.
-        /// </summary>
-        /// <param name="state">entity state.</param>
-        /// <returns>returns the entity of taxRate.</returns>
-        TaxRate GetByCountrySubDivisionCode(string state);
         /// <summary>
         /// Get list of taxRate.
         /// </summary>

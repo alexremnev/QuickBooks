@@ -5,7 +5,8 @@ namespace QuickBooks.Models.Business
 {
     public class CreditMemoService : BaseService<CreditMemo>, ICreditMemoService
     {
-        public CreditMemoService(IReportRepository reportRepository, ITaxRepository repository, IOAuthService oAuthService) : base(reportRepository, repository, oAuthService, "CreditMemo")
+        public CreditMemoService(IReportRepository reportRepository, ITaxRateProvider taxRateProvider,
+            IOAuthService oAuthService) : base(reportRepository, taxRateProvider, oAuthService, "CreditMemo")
         {
         }
     }

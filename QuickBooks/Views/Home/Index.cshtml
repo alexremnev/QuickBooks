@@ -1,8 +1,7 @@
 ﻿@{
     ViewBag.Title = "Index";
 }
-@model QuickBooks.Models.DAL.State
-@*@model IList<OAuth>*@
+@model QuickBooks.Models.Data.State
 @using System.Configuration
 @using System.Web.Mvc.Html
 <!DOCTYPE html>
@@ -71,14 +70,17 @@
     }
     <div class="panel-body">
         <div>
-            @using (@Html.BeginForm("Recalculate", "Report", Model))
+            @using (Html.BeginForm("Recalculate", "Report", Model))
             {
                 <div class="form-group">
                     <button class="btn btn-success" id="RecalculateBtn" onclick="DisableSaveButton()">Calculate sales tax</button>
                     @Html.DropDownListFor(md => md.selectedItem, list, "Choose the company", new {@class = "form-control"})
                 </div>
-                <div>
-                    <progress id="pr_1"></progress>
+                <div class="progress">
+                    <div id="pr_1" class="progress-bar progress-bar-striped active progress-bar-success" aria-valuenow="100"
+                         aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                        Calculate
+                    </div>
                 </div>
             }
         </div>
@@ -89,8 +91,11 @@
                     <button class="btn btn-success" id="SaveBtn" onclick="DisableRecalculateButton()">Save Report</button>
                     @Html.DropDownListFor(md => md.selectedItem, list, "Choose the company", new {@class = "form-control"})
                 </div>
-                <div>
-                    <progress id="pr_2"></progress>
+                <div class="progress">
+                    <div id="pr_2" class="progress-bar progress-bar-striped active progress-bar-success" aria-valuenow="100"
+                         aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                        Save
+                    </div>
                 </div>
             }
         </div>

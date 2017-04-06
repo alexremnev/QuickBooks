@@ -8,20 +8,21 @@ namespace QuickBooks.Models.Business
 {
     public class SalesReceiptService : BaseService<SalesReceipt>, ISalesReceiptService
     {
-        public SalesReceiptService(IReportRepository reportRepository, ITaxRepository repository, IOAuthService oAuthService) : base(reportRepository, repository, oAuthService, "SalesReceipt")
+        public SalesReceiptService(IReportRepository reportRepository, ITaxRateProvider taxRateProvider,
+            IOAuthService oAuthService) : base(reportRepository, taxRateProvider, oAuthService, "SalesReceipt")
         {
         }
 
-        public override IList<SalesReceipt> Calculate(string realmId, IList<SalesReceipt> list = null)
+        protected override IList<SalesReceipt> Calculate(string realmId, params SalesReceipt[] list)
         {
-            DeleteDepositedSalesReceipts(realmId,list);
-            return base.Calculate(realmId,list);
+            DeleteDepositedSalesReceipts(realmId, list);
+            return base.Calculate(realmId, list);
         }
 
-        private void DeleteDepositedSalesReceipts(string realmId,IList<SalesReceipt> recalculateEntity)
+        private void DeleteDepositedSalesReceipts(string realmId, params SalesReceipt[] recalculateEntity)
         {
             var queryService = _oAuthService.GetQueryService<SalesReceipt>(realmId);
-            var entities = recalculateEntity ?? queryService.Select(x => x).ToList();
+            var entities = recalculateEntity ?? queryService.Select(x => x).ToArray();
             var dataService = _oAuthService.GetDataService(realmId);
             var deposits = dataService.FindAll(new Deposit());
             foreach (var salesReceipt in entities)
@@ -30,6 +31,7 @@ namespace QuickBooks.Models.Business
                 if (deposit != null) dataService.Delete(deposit);
             }
         }
+
         /// <summary>
         /// Find deposit corresponding sales receipt or return null.
         /// </summary>
@@ -39,9 +41,9 @@ namespace QuickBooks.Models.Business
         private static Deposit FindDeposit(IEnumerable<Deposit> deposits, IntuitEntity salesReceipt)
         {
             return deposits.Where(deposit => deposit.Line != null)
-                .SelectMany(deposit => deposit.Line, (deposit, line) => new { deposit, line })
+                .SelectMany(deposit => deposit.Line, (deposit, line) => new {deposit, line})
                 .Where(t => t.line.LinkedTxn != null)
-                .Select(t => new { t, any = t.line.LinkedTxn.Any(linkedTxn => linkedTxn.TxnId == salesReceipt.Id) })
+                .Select(t => new {t, any = t.line.LinkedTxn.Any(linkedTxn => linkedTxn.TxnId == salesReceipt.Id)})
                 .Where(t => t.any)
                 .Select(t => t.t.deposit).FirstOrDefault();
         }

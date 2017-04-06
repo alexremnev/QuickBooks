@@ -1,12 +1,8 @@
-﻿using QuickBooks.Models.DAL;
+﻿using QuickBooks.Models.Data;
 
 namespace QuickBooks.Models.Repository
 {
-    public class ReportRepository : Repository<Report>, IReportRepository
+    public class ReportRepository : BaseRepository<Report>, IReportRepository
     {
-        public ReportRepository() : base(NameEntity)
-        {
-        }
-        private const string NameEntity = "Report";
     }
 }

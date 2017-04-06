@@ -3,7 +3,7 @@ using Intuit.Ipp.Core;
 using Intuit.Ipp.DataService;
 using Intuit.Ipp.GlobalTaxService;
 using Intuit.Ipp.QueryFilter;
-using QuickBooks.Models.DAL;
+using QuickBooks.Models.Data;
 
 namespace QuickBooks.Models.Business
 {
