@@ -6,7 +6,9 @@ namespace QuickBooks.Models.Business
 {
     public class EstimateService : BaseService<Estimate>, IEstimateService
     {
-        public EstimateService(IReportRepository reportRepository, ITaxRateProvider taxRateProvider, IOAuthService oAuthService) : base(reportRepository, taxRateProvider, oAuthService, "Estimate")
+        public EstimateService(IReportRepository reportRepository, ITaxRateProvider taxRateProvider,
+            IOAuthService oAuthService, IQBApi qb)
+            : base(reportRepository, taxRateProvider, oAuthService, qb, "Estimate")
         {
         }
 

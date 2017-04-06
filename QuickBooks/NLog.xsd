@@ -250,7 +250,7 @@
         <xs:choice minOccurs="0" maxOccurs="unbounded">
           <xs:element name="name" minOccurs="0" maxOccurs="1" type="xs:string" />
           <xs:element name="batchSize" minOccurs="0" maxOccurs="1" type="xs:integer" />
-          <xs:element name="overflowAction" minOccurs="0" maxOccurs="1" type="NLog.Targets.Wrappers.AsyncTargetWrapperOverflowAction" />
+          <xs:element name="overflowAction" minOccurs="0" maxOccurs="1" type="NLog.Targets.Wrappers.AsyncTargetQBApiOverflowAction" />
           <xs:element name="queueLimit" minOccurs="0" maxOccurs="1" type="xs:integer" />
           <xs:element name="timeToSleepBetweenBatches" minOccurs="0" maxOccurs="1" type="xs:integer" />
         </xs:choice>
@@ -264,7 +264,7 @@
             <xs:documentation>Number of log events that should be processed in a batch by the lazy writer thread.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="overflowAction" type="NLog.Targets.Wrappers.AsyncTargetWrapperOverflowAction">
+        <xs:attribute name="overflowAction" type="NLog.Targets.Wrappers.AsyncTargetQBApiOverflowAction">
           <xs:annotation>
             <xs:documentation>Action to be taken when the lazy writer thread request queue count exceeds the set limit.</xs:documentation>
           </xs:annotation>
@@ -282,7 +282,7 @@
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-  <xs:simpleType name="NLog.Targets.Wrappers.AsyncTargetWrapperOverflowAction">
+  <xs:simpleType name="NLog.Targets.Wrappers.AsyncTargetQBApiOverflowAction">
     <xs:restriction base="xs:string">
       <xs:enumeration value="Grow" />
       <xs:enumeration value="Discard" />

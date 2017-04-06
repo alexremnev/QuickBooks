@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Intuit.Ipp.Data;
-using Intuit.Ipp.LinqExtender;
 using QuickBooks.Models.Repository;
 
 namespace QuickBooks.Models.Business
@@ -9,7 +8,8 @@ namespace QuickBooks.Models.Business
     public class SalesReceiptService : BaseService<SalesReceipt>, ISalesReceiptService
     {
         public SalesReceiptService(IReportRepository reportRepository, ITaxRateProvider taxRateProvider,
-            IOAuthService oAuthService) : base(reportRepository, taxRateProvider, oAuthService, "SalesReceipt")
+            IOAuthService oAuthService, IQBApi qb)
+            : base(reportRepository, taxRateProvider, oAuthService, qb, "SalesReceipt")
         {
         }
 
@@ -21,14 +21,12 @@ namespace QuickBooks.Models.Business
 
         private void DeleteDepositedSalesReceipts(string realmId, params SalesReceipt[] recalculateEntity)
         {
-            var queryService = _oAuthService.GetQueryService<SalesReceipt>(realmId);
-            var entities = recalculateEntity ?? queryService.Select(x => x).ToArray();
-            var dataService = _oAuthService.GetDataService(realmId);
-            var deposits = dataService.FindAll(new Deposit());
+            var entities = recalculateEntity ?? _qb.List<SalesReceipt>(realmId);
+            var deposits = _qb.FindAllDeposit(realmId);
             foreach (var salesReceipt in entities)
             {
                 var deposit = FindDeposit(deposits, salesReceipt);
-                if (deposit != null) dataService.Delete(deposit);
+                if (deposit != null) _qb.DeleteDeposit(realmId, deposit);
             }
         }
 

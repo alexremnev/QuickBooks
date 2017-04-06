@@ -246,10 +246,12 @@
     <Compile Include="Models\Business\IRegistry.cs" />
     <Compile Include="Models\Business\IUpdatingService.cs" />
     <Compile Include="Models\Business\IUpdatingServicesRegistry.cs" />
+    <Compile Include="Models\Business\IQBApi.cs" />
     <Compile Include="Models\Business\PersistingServicesRegistry.cs" />
     <Compile Include="Models\Business\Registry.cs" />
     <Compile Include="Models\Business\TaxRateProvider.cs" />
     <Compile Include="Models\Business\UpdatingServicesRegistry.cs" />
+    <Compile Include="Models\Business\QBApi.cs" />
     <Compile Include="Models\Data\BaseEntity.cs" />
     <Compile Include="Models\Data\EncryptedString.cs" />
     <Compile Include="Models\Data\LineItem.cs" />
